@@ -1,6 +1,6 @@
-#include "Animations.h"
-#include "Board.h"
-#include "Colors.h"
+#include "Display/Animations.h"
+#include "Display/Board.h"
+#include "Display/Colors.h"
 
 #include <bits/pthreadtypes.h>
 #include <stdio.h>

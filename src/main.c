@@ -6,9 +6,9 @@
 #include <termios.h>
 #include <unistd.h>
 
-#include "Animations.h"
-#include "Board.h"
-#include "Colors.h"
+#include "Display/Animations.h"
+#include "Display/Board.h"
+#include "Display/Colors.h"
 #include "Inputs.h"
 #include "Player.h"
 #include "globals.h"

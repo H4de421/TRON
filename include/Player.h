@@ -4,8 +4,8 @@
 #include <string.h>
 #include <stdio.h>
 
-#include "String.h"
-#include "Board.h"
+#include "Utils/String.h"
+#include "Display/Board.h"
 
 typedef enum Dir {
     UP,

@@ -1,0 +1,11 @@
+scenarios :
+    sur une limite : 
+        choisir le graph avec le + territoire 
+    sur le meme graph :
+        utiliser garder le "teritoire potentiel" le plus grand (vornoil euristique)
+    sur des graphe diff : 
+        temporiser (chineese postman problème)
+
+[IDEE] a chaque tour:
+    MINIMAX (séparé ou en même temps...) sur 5 tour.
+    calcul de score : territoire acquis

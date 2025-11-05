@@ -1,4 +1,5 @@
 # TRON
+===============
 
 TRON is a simple game based on the 1982 TRON movie.  
 In this game, 2 bikes ride on a grid, leaving an uncrossable trail behind them.  
@@ -31,6 +32,36 @@ At the end of the program, the terminal will return to its previous state, even 
 ### AI
 
 Work in progress.
+
+for now multiples ways are considered.
+
+---
+
+## ROADMAP
+
+Here is a list of features I have considered and explored.
+All features on this list are awaiting integration into this project.
+
++ main menu
+
++ multiplayer (local server)
+
++ AI implémentation 
+
+## possibles futures features
+
+This unordered list gathers all the simple ideas that came to me for this project.
+These aren't in-depth reflections, but simply interesting features that I think are worth noting.
+None of these features are planned for implementation in the near future.
+
++ pause 
+
++ bindable controls
+
++ multiplayer local (2 user on same keyboard) / Tmux intergation
+
++ score board
+
 
 ---
 
