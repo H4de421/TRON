@@ -38,5 +38,5 @@ void restore_grid_tile(String *buffer, int x, int y);
 
 void *updateBoardLoop(void *raw_args);
 
-int adjsut_grid_size(int *width, int *height);
+int adjust_grid_size(int *width, int *height);
 

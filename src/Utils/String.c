@@ -1,42 +1,52 @@
 #include "Utils/String.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-struct string *createString(int capacity, pthread_mutex_t *dispaly_mutex) {
-  struct string *res = malloc(sizeof(struct string));
-  res->size = 0;
-  res->capacity = capacity;
-  res->content = calloc(capacity + 1, sizeof(char));
-  res->dispaly_mutex = dispaly_mutex;
-  return res;
+struct string *createString(int capacity, pthread_mutex_t *dispaly_mutex)
+{
+    struct string *res = malloc(sizeof(struct string));
+    res->size = 0;
+    res->capacity = capacity;
+    res->content = calloc(capacity + 1, sizeof(char));
+    res->dispaly_mutex = dispaly_mutex;
+    return res;
 }
 
-void destroyString(struct string *str) {
-  free(str->content);
-  free(str);
+void destroyString(struct string *str)
+{
+    free(str->content);
+    free(str);
 }
 
-void clearString(struct string *str) {
-  *(str->content) = '\0';
-  str->size = 0;
+void clearString(struct string *str)
+{
+    *(str->content) = '\0';
+    str->size = 0;
 }
 
-void doubleCapacity(struct string *str) {
-  str->content = realloc(str->content, (str->capacity * 2 + 1) * sizeof(char));
-  str->capacity *= 2;
+void doubleCapacity(struct string *str)
+{
+    str->content =
+        realloc(str->content, (str->capacity * 2 + 1) * sizeof(char));
+    str->capacity *= 2;
 }
 
-void addToString(struct string *str, char *content, int size) {
-  pthread_mutex_lock(str->dispaly_mutex);
-  if (str->size + size >= str->capacity) {
-    doubleCapacity(str);
+void addToString(struct string *str, char *content, int size)
+{
+    pthread_mutex_lock(str->dispaly_mutex);
+    if (str->size + size >= str->capacity)
+    {
+        doubleCapacity(str);
+        pthread_mutex_unlock(str->dispaly_mutex);
+        addToString(str, content, size);
+    }
+    else
+    {
+        strcat(str->content, content);
+        str->size += size;
+        str->content[str->size] = '\0';
+    }
     pthread_mutex_unlock(str->dispaly_mutex);
-    addToString(str, content, size);
-  } else {
-    strcat(str->content, content);
-    str->size += size;
-    str->content[str->size] = '\0';
-  }
-  pthread_mutex_unlock(str->dispaly_mutex);
 }

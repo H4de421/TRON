@@ -27,7 +27,9 @@ typedef struct player {
     Dir dir;
     Dir old_dir;
     int num;
+    int colision;
 } Player;
+
 
 Player *create_player(int x, int y, char str[]);
 

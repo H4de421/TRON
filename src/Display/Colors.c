@@ -1,5 +1,5 @@
 #include "Display/Colors.h"
-char TITLE_COLOR[15] ="\x1b[38;5;27m" ;
+char TITLE_COLOR[15] = "\x1b[38;5;27m";
 
 char GRID_COLOR[15] = "\x1b[38;5;245m";
 char PLAYER_COLOR[15] = "\x1b[38;5;21m";

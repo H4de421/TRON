@@ -6,136 +6,162 @@
 #include <termios.h>
 #include <unistd.h>
 
-#include "Display/Animations.h"
 #include "Display/Board.h"
-#include "Display/Colors.h"
 #include "Inputs.h"
-#include "Player.h"
 #include "globals.h"
+#include "Game.h"
 
 struct termios old_termios;
 
-void reset_terminal(void) {
-  tcsetattr(STDIN_FILENO, TCSAFLUSH, &old_termios);
-  printf("\e[?25h"); // Affiche le curseur
-  // move cursor uneder grid
-  clear_grid(HEIGHT_ID_TO_DISPLAY_ID(GRID_WIDTH));
-  printf("\e[0;0H");
+void reset_terminal(void)
+{
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &old_termios);
+    printf("\e[?25h"); // Affiche le curseur
+    // move cursor uneder grid
+    clear_grid(HEIGHT_ID_TO_DISPLAY_ID(GRID_WIDTH));
+    printf("\e[0;0H");
 
-  fflush(stdout);
+    fflush(stdout);
 }
 
-void handle_sigint(int sig) {
-  (void)sig;
-  reset_terminal();
-  exit(0);
+void handle_sigint(int sig)
+{
+    (void)sig;
+    reset_terminal();
+    exit(0);
 }
 
-int main(void) {
-  int adjusted = adjsut_grid_size(&GRID_WIDTH, &GRID_HEIGHT);
-  if (adjusted) {
-    return 2;
-  }
+int main(void)
+{
+    /*--------------------*\
+    | grid size adjustment |
+    \*--------------------*/
 
-  int stoped = 0;
-  char read_char = '\0';
-  char next_char = '\0';
-  pthread_mutex_t input_mutex;
-  pthread_mutex_t dispaly_mutex;
-  pthread_mutex_init(&input_mutex, NULL);
-  pthread_mutex_init(&dispaly_mutex, NULL);
+    int adjusted = adjust_grid_size(&GRID_WIDTH, &GRID_HEIGHT);
+    if (adjusted)
+    {
+        return 2;
+    }
+    /*---------------------*\
+    | variables definitions |
+    \*---------------------*/
 
-  // save current terminal state
-  struct termios new_termios;
+    int stoped = 0;
+    char read_char = '\0';
+    char next_char = '\0';
+    pthread_mutex_t input_mutex;
+    pthread_mutex_t dispaly_mutex;
+    pthread_mutex_init(&input_mutex, NULL);
+    pthread_mutex_init(&dispaly_mutex, NULL);
 
-  tcgetattr(STDIN_FILENO, &old_termios);
+    /*--------------*\
+    | terminal setup |
+    \*--------------*/
+    
+    // save current terminal state
+    struct termios new_termios;
 
-  atexit(reset_terminal);
-  signal(SIGINT, handle_sigint);
+    tcgetattr(STDIN_FILENO, &old_termios);
 
-  // disable "echo" and canonic mode (allow a simple input an not phrases)
-  new_termios = old_termios;
-  new_termios.c_lflag &= ~(ICANON | ECHO);
-  tcsetattr(STDIN_FILENO, TCSAFLUSH, &new_termios);
+    atexit(reset_terminal);
+    signal(SIGINT, handle_sigint);
 
-  // set stdin to non-blocking (may be redondant)
-  int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
-  fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
+    // disable "echo" and canonic mode (allow a simple input an not phrases)
+    new_termios = old_termios;
+    new_termios.c_lflag &= ~(ICANON | ECHO);
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &new_termios);
 
-  // hiding cursor
-  printf("\e[?25l");
-  fflush(stdout);
-  /*--------------*\
-  | display buffer |
-  \*--------------*/
+    // set stdin to non-blocking (may be redondant)
+    int flags = fcntl(STDIN_FILENO, F_GETFL, 0);
+    fcntl(STDIN_FILENO, F_SETFL, flags | O_NONBLOCK);
 
-  String *buffer = createString(30, &dispaly_mutex);
+    // hiding cursor
+    printf("\e[?25l");
+    fflush(stdout);
 
-  /*--------------*\
-  | input thread   |
-  \*--------------*/
+    /*--------------*\
+    | display buffer |
+    \*--------------*/
 
-  // input thread preparation
-  struct inputsArgs *raw_args = malloc(sizeof(struct inputsArgs));
-  raw_args->stop = &stoped;
-  raw_args->read_char = &read_char;
-  raw_args->next_char = &next_char;
-  raw_args->input_mutex = &input_mutex;
+    String *buffer = createString(30, &dispaly_mutex);
 
-  pthread_t input_thread;
-  pthread_create(&input_thread, NULL, input_Handler, raw_args);
+    /*--------------*\
+    | input thread   |
+    \*--------------*/
 
-  /*--------------*\
-  | display thread |
-  \*--------------*/
+    // input thread preparation
+    // TODO RENAME THIS STRUCT
+    struct inputsArgs *raw_args_input = malloc(sizeof(struct inputsArgs));
+    raw_args_input->stop = &stoped;
+    raw_args_input->read_char = &read_char;
+    raw_args_input->next_char = &next_char;
+    raw_args_input->input_mutex = &input_mutex;
 
-  BoardContent *raw_args_board = malloc(sizeof(BoardContent));
-  raw_args_board->width = GRID_WIDTH;
-  raw_args_board->height = GRID_HEIGHT;
-  raw_args_board->stoped = &stoped;
-  raw_args_board->bufferMutex = &dispaly_mutex;
-  raw_args_board->buffer = buffer;
-  raw_args_board->grid = create_grid(GRID_WIDTH, GRID_HEIGHT);
+    pthread_t input_thread;
+    pthread_create(&input_thread, NULL, input_Handler, raw_args_input);
 
-  pthread_t display_thread;
-  pthread_create(&display_thread, NULL, updateBoardLoop, raw_args_board);
+    /*--------------*\
+    | display thread |
+    \*--------------*/
 
-  draw_basic_grid(raw_args_board->buffer, GRID_WIDTH, GRID_HEIGHT);
-  int player_x = GRID_WIDTH/8  + 1;
-  int player_y = GRID_HEIGHT/2 + 1;
-  Player *player = create_player(player_x, player_y, PLAYER_COLOR);
-  draw_player(player, buffer, raw_args_board->grid);
+    BoardContent *raw_args_board = malloc(sizeof(BoardContent));
+    raw_args_board->width = GRID_WIDTH;
+    raw_args_board->height = GRID_HEIGHT;
+    raw_args_board->stoped = &stoped;
+    raw_args_board->bufferMutex = &dispaly_mutex;
+    raw_args_board->buffer = buffer;
+    raw_args_board->grid = create_grid(GRID_WIDTH, GRID_HEIGHT);
 
-  struct timespec ts;
-  // 125ms
-  ts.tv_sec = 0;
-  ts.tv_nsec = 125000000;
+    pthread_t display_thread;
+    pthread_create(&display_thread, NULL, updateBoardLoop, raw_args_board);
 
-  // main loop
-  int err = 0;
-  while (!err) {
-    err = move_player(player, buffer, raw_args_board->grid);
-    // input managment
-    pthread_mutex_lock(&input_mutex);
-    apply_input(player, read_char, &stoped);
-    read_char = next_char;
-    next_char = '\0';
-    pthread_mutex_unlock(&input_mutex);
+    /*--------------------*\
+    | Game section         |
+    \*--------------------*/
 
-    nanosleep(&ts, NULL);
-  }
+    start_game(raw_args_board, raw_args_input, &stoped);
+    /*
+    draw_basic_grid(raw_args_board->buffer, GRID_WIDTH, GRID_HEIGHT);
+    int player_x = GRID_WIDTH / 8 + 1;
+    int player_y = GRID_HEIGHT / 2 + 1;
+    Player *player = create_player(player_x, player_y, PLAYER_COLOR);
+    draw_player(player, buffer, raw_args_board->grid);
 
-  draw_colision_anim(player, buffer, &input_mutex, 2);
+    struct timespec ts;
+    // 125ms
+    ts.tv_sec = 0;
+    ts.tv_nsec = 125000000;
 
-  stoped = 2;
-  pthread_join(display_thread, NULL);
-  pthread_join(input_thread, NULL);
-  destroy_board(raw_args_board);
+    // main loop
+    int err = 0;
+    while (!err)
+    {
+        err = move_player(player, buffer, raw_args_board->grid);
+        // input managment
+        pthread_mutex_lock(&input_mutex);
+        apply_input(player, read_char, &stoped);
+        read_char = next_char;
+        next_char = '\0';
+        pthread_mutex_unlock(&input_mutex);
 
-  destroy_player(player);
-  free(raw_args);
-  clear_grid(HEIGHT_ID_TO_DISPLAY_ID(GRID_WIDTH));
-  printf("\e[0;0H");
-  fflush(stdout);
-  return 0;
+        nanosleep(&ts, NULL);
+    }
+
+    draw_colision_anim(player, buffer, &input_mutex, 2);
+*/
+
+    /*--------------------*\
+    | end Game section     |
+    \*--------------------*/
+
+    pthread_join(display_thread, NULL);
+    pthread_join(input_thread, NULL);
+    destroy_board(raw_args_board);
+
+    
+    free(raw_args_input);
+    clear_grid(HEIGHT_ID_TO_DISPLAY_ID(GRID_WIDTH));
+    printf("\e[0;0H");
+    fflush(stdout);
+    return 0;
 }
