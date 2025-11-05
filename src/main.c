@@ -7,9 +7,9 @@
 #include <unistd.h>
 
 #include "Display/Board.h"
+#include "Game/Game.h"
 #include "Inputs.h"
 #include "globals.h"
-#include "Game.h"
 
 struct termios old_termios;
 
@@ -57,7 +57,7 @@ int main(void)
     /*--------------*\
     | terminal setup |
     \*--------------*/
-    
+
     // save current terminal state
     struct termios new_termios;
 
@@ -120,35 +120,6 @@ int main(void)
     \*--------------------*/
 
     start_game(raw_args_board, raw_args_input, &stoped);
-    /*
-    draw_basic_grid(raw_args_board->buffer, GRID_WIDTH, GRID_HEIGHT);
-    int player_x = GRID_WIDTH / 8 + 1;
-    int player_y = GRID_HEIGHT / 2 + 1;
-    Player *player = create_player(player_x, player_y, PLAYER_COLOR);
-    draw_player(player, buffer, raw_args_board->grid);
-
-    struct timespec ts;
-    // 125ms
-    ts.tv_sec = 0;
-    ts.tv_nsec = 125000000;
-
-    // main loop
-    int err = 0;
-    while (!err)
-    {
-        err = move_player(player, buffer, raw_args_board->grid);
-        // input managment
-        pthread_mutex_lock(&input_mutex);
-        apply_input(player, read_char, &stoped);
-        read_char = next_char;
-        next_char = '\0';
-        pthread_mutex_unlock(&input_mutex);
-
-        nanosleep(&ts, NULL);
-    }
-
-    draw_colision_anim(player, buffer, &input_mutex, 2);
-*/
 
     /*--------------------*\
     | end Game section     |
@@ -158,7 +129,6 @@ int main(void)
     pthread_join(input_thread, NULL);
     destroy_board(raw_args_board);
 
-    
     free(raw_args_input);
     clear_grid(HEIGHT_ID_TO_DISPLAY_ID(GRID_WIDTH));
     printf("\e[0;0H");

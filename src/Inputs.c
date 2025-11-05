@@ -1,29 +1,24 @@
 #include <stdio.h>
-#include "Player.h"
+
 #define _XOPEN_SOURCE 500
 #include "Inputs.h"
 
 #define NB_INPUTS 6
+#define NB_SCENE 2
+#define SCENE_MENU 0
+#define SCENE_GAME 1
 
-static struct inputAssignment inputList[NB_INPUTS] = {
+static struct inputAssignment inputList[NB_SCENE][NB_INPUTS] = {
+    {},{
     { .inputValue = 'p', .function = &input_quit },
     { .inputValue = 'd', .function = &input_move_right },
     { .inputValue = 'q', .function = &input_move_left },
     { .inputValue = 'z', .function = &input_move_up },
     { .inputValue = 's', .function = &input_move_down },
     { .inputValue = 'o', .function = &input_DEBUG },
+    }
 };
 
-void apply_input(Player *player, char input, int *stoped)
-{
-    for (int i = 0; i < NB_INPUTS; i++)
-    {
-        if (inputList[i].inputValue == input)
-        {
-            inputList[i].function(player, stoped);
-        }
-    }
-}
 
 void *input_Handler(void *raw_args)
 {
@@ -60,6 +55,22 @@ void *input_Handler(void *raw_args)
 }
 
 /*-------------------*\
+|  Game relataed code |
+\*-------------------*/
+
+
+void apply_game_input(Player *player, char input, int *stoped)
+{
+    for (int i = 0; i < NB_INPUTS; i++)
+    {
+        if (inputList[SCENE_GAME][i].inputValue == input)
+        {
+            inputList[SCENE_GAME][i].function(player, stoped);
+        }
+    }
+}
+
+/*-------------------*\
 |  Inputs functions   |
 \*-------------------*/
 
@@ -72,8 +83,7 @@ void input_quit(Player *player, int *stoped)
 void input_move_left(Player *player, int *stoped)
 {
     (void)stoped;
-    if (player->dir != LEFT && player->dir != RIGHT
-        && !player->colision)
+    if (player->dir != LEFT && player->dir != RIGHT && !player->colision)
     {
         player->dir = LEFT;
     }
@@ -81,8 +91,7 @@ void input_move_left(Player *player, int *stoped)
 void input_move_right(Player *player, int *stoped)
 {
     (void)stoped;
-    if (player->dir != LEFT && player->dir != RIGHT
-        && !player->colision)
+    if (player->dir != LEFT && player->dir != RIGHT && !player->colision)
     {
         player->dir = RIGHT;
     }
@@ -90,8 +99,7 @@ void input_move_right(Player *player, int *stoped)
 void input_move_up(Player *player, int *stoped)
 {
     (void)stoped;
-    if (player->dir != UP && player->dir != DOWN
-        && !player->colision)
+    if (player->dir != UP && player->dir != DOWN && !player->colision)
     {
         player->dir = UP;
     }
@@ -99,8 +107,7 @@ void input_move_up(Player *player, int *stoped)
 void input_move_down(Player *player, int *stoped)
 {
     (void)stoped;
-    if (player->dir != UP && player->dir != DOWN
-        && !player->colision)
+    if (player->dir != UP && player->dir != DOWN && !player->colision)
     {
         player->dir = DOWN;
     }
@@ -111,3 +118,8 @@ void input_DEBUG(Player *player, int *stoped)
     (void)stoped;
     (void)player;
 }
+
+/*-------------------*\
+|  menu relataed code |
+\*-------------------*/
+

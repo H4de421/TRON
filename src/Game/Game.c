@@ -1,12 +1,13 @@
-#include "Game.h"
+#include "Game/Game.h"
 
 #include "Display/Animations.h"
 #include "Display/Board.h"
 #include "Display/Colors.h"
 #include "Inputs.h"
-#include "Player.h"
+#include "Game/Player.h"
 
-void start_game(BoardContent *raw_args_board, struct inputsArgs *raw_args_input, int *stoped)
+void start_game(BoardContent *raw_args_board, struct inputsArgs *raw_args_input,
+                int *stoped)
 {
     String *buffer = raw_args_board->buffer;
 
@@ -28,7 +29,7 @@ void start_game(BoardContent *raw_args_board, struct inputsArgs *raw_args_input,
         err = move_player(player, buffer, raw_args_board->grid);
         // input managment
         pthread_mutex_lock(raw_args_input->input_mutex);
-        apply_input(player, *raw_args_input->read_char, stoped);
+        apply_game_input(player, *raw_args_input->read_char, stoped);
         *raw_args_input->read_char = *raw_args_input->next_char;
         *raw_args_input->next_char = '\0';
         pthread_mutex_unlock(raw_args_input->input_mutex);
@@ -37,8 +38,7 @@ void start_game(BoardContent *raw_args_board, struct inputsArgs *raw_args_input,
     }
     if (err)
         draw_colision_anim(player, buffer, raw_args_input->input_mutex, 2);
-    
-    *stoped = 2;
-    destroy_player(player); 
-}
 
+    *stoped = 2;
+    destroy_player(player);
+}

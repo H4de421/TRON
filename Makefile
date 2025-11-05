@@ -1,7 +1,7 @@
 CC=gcc 
 CFLAGS= -Wall -Wextra -Werror -g -fsanitize=address -Iinclude/
 LDFLAGS=-fsanitize=address 
-SRCS=$(wildcard ./src/*.c) $(wildcard ./src/Utils//*.c) $(wildcard ./src/Display/*.c)  
+SRCS=$(wildcard ./src/*.c) $(wildcard ./src/Game/*.c) $(wildcard ./src/Utils/*.c) $(wildcard ./src/Display/*.c)  
 OBJS=$(SRCS:.c=.o)
 TEST=$(wildcard ./tests/*.c)
 TESTO=$(TEST:.c=.o)

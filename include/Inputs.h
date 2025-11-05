@@ -6,7 +6,8 @@
 #include <stdio.h>
 #include <time.h>
 #include <sys/time.h>
-#include "Player.h"
+
+#include "Game/Player.h"
 
 #define QUIT_INPUT 'p'
 
@@ -22,7 +23,7 @@ struct inputAssignment {
     void (*function)(Player *player, int *stoped);
 };
 
-void apply_input(Player *player, char input, int *stoped);
+void apply_game_input(Player *player, char input, int *stoped);
 
 
 void *input_Handler(void *raw_args);
