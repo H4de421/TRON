@@ -22,11 +22,12 @@ int adjust_grid_size(int *width, int *height)
     int new_width = ws.ws_col;
     int new_height = ws.ws_row;
     clear_grid(new_height);
-    int border_H_size = 3;
-    int border_W_size = 1;
+    int border_H_size = 2;
+    int border_W_size = 2;
 
     int minimal_grid_height = 19; // 10 row at least
     int minimal_grid_width = 25;
+
 
     if (new_height < minimal_grid_height + border_H_size
         || new_width < minimal_grid_width + border_W_size)
@@ -34,6 +35,7 @@ int adjust_grid_size(int *width, int *height)
         printf("\e[%d;%dHNot enougth space!", new_height / 2,
                (new_width / 2) - 9);
         printf("\e[%d;0H", new_height - 2);
+        fflush(stdout);
         sleep(2);
         return 1;
     }
@@ -43,8 +45,11 @@ int adjust_grid_size(int *width, int *height)
         *width = (((new_width - border_W_size) -1 ) / 5);
         *height = (((new_height - border_H_size) - 1) / 2);
     }
+
     return 0;
 }
+
+
 char *create_grid(int width, int height)
 {
     return calloc(width * height, sizeof(char));
