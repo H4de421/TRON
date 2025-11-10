@@ -2,7 +2,25 @@
 
 // define ddefault value
 // thoses will be overwrite at the start of the programs
+
+/*----------------*\
+| Canvas variables |
+\*----------------*/
+int CANVAS_HEIGHT = 25;
+int CANVAS_WIDTH = 50;
+
+/*----------------*\
+| Menu variables   |
+\*----------------*/
+int MENU_OPTION_H_SIZE = 1;
+int MENU_OPTION_H_MARGIN = 5; 
+
+/*----------------*\
+| Grid variables   |
+\*----------------*/
 int GRID_HEIGHT = 10;
 int GRID_WIDTH = 5;
 int SHIFT_WIDTH = 3;
 int SHIFT_HEIGHT = 3;
+
+

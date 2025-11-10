@@ -10,6 +10,7 @@
 #include "Game/Game.h"
 #include "Inputs.h"
 #include "globals.h"
+#include "Display/Menu.h"
 
 struct termios old_termios;
 
@@ -119,7 +120,8 @@ int main(void)
     | Game section         |
     \*--------------------*/
 
-    start_game(raw_args_board, raw_args_input, &stoped);
+    display_menu(buffer);
+    //start_game(raw_args_board, raw_args_input, &stoped);
 
     /*--------------------*\
     | end Game section     |

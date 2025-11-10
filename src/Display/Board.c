@@ -19,31 +19,29 @@ int adjust_grid_size(int *width, int *height)
 {
     struct winsize ws;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
-    int new_width = ws.ws_col;
-    int new_height = ws.ws_row;
-    clear_grid(new_height);
+    CANVAS_WIDTH = ws.ws_col;
+    CANVAS_HEIGHT = ws.ws_row;
+    clear_grid(CANVAS_HEIGHT);
     int border_H_size = 2;
     int border_W_size = 2;
 
-    int minimal_grid_height = 19; // 10 row at least
-    int minimal_grid_width = 25;
 
 
-    if (new_height < minimal_grid_height + border_H_size
-        || new_width < minimal_grid_width + border_W_size)
+    if (CANVAS_HEIGHT < MIN_GRID_HEIGHT + border_H_size
+        || CANVAS_WIDTH < MIN_GRID_WIDTH + border_W_size)
     {
-        printf("\e[%d;%dHNot enougth space!", new_height / 2,
-               (new_width / 2) - 9);
-        printf("\e[%d;0H", new_height - 2);
+        printf("\e[%d;%dHNot enougth space!", CANVAS_HEIGHT / 2,
+               (CANVAS_WIDTH / 2) - 9);
+        printf("\e[%d;0H", CANVAS_HEIGHT - 2);
         fflush(stdout);
         sleep(2);
         return 1;
     }
     else
     {
-        draw_borders(new_width, new_height);
-        *width = (((new_width - border_W_size) -1 ) / 5);
-        *height = (((new_height - border_H_size) - 1) / 2);
+        draw_borders(CANVAS_WIDTH, CANVAS_HEIGHT);
+        *width = (((CANVAS_WIDTH - border_W_size) -1 ) / 5);
+        *height = (((CANVAS_HEIGHT - border_H_size) - 1) / 2);
     }
 
     return 0;

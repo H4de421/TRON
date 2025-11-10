@@ -10,6 +10,9 @@
 #define WIDTH_ID_TO_DISPLAY_ID(ID) (((ID)-1)*5+1)
 #define GRID_COORDINATE(x,y) ((y)*GRID_WIDTH+(x))
 
+#define MIN_GRID_HEIGHT 25
+#define MIN_GRID_WIDTH 50
+
 //#define GRID_WIDTH_default 25
 //#define GRID_HEIGHT_default 15
 
