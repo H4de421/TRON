@@ -1,8 +1,15 @@
 #pragma once
 
+typedef enum GAME_STATE {
+    MAIN_MENU,
+    GAME,
+    STOP
+} GAME_STATE;
+
 /*----------------*\
 | Canvas variables |
 \*----------------*/
+#define NB_SCENE 2
 extern int CANVAS_HEIGHT;
 extern int CANVAS_WIDTH;
 

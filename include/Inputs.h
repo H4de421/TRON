@@ -8,33 +8,42 @@
 #include <sys/time.h>
 
 #include "Game/Player.h"
+#include "Menu/MainMenu.h"
 
 #define QUIT_INPUT 'p'
 
-struct inputsArgs {
+typedef struct inputsArgs {
     pthread_mutex_t *input_mutex;
     char *read_char;
     char *next_char;
     int *stop;
-};
+} Inputs_args;
 
-struct inputAssignment {
+typedef struct inputAssignment {
     char inputValue;
-    void (*function)(Player *player, int *stoped);
-};
+    void (*function)(int *stoped, void *args);
+} inputAssignment;
+
+
+
 
 void apply_game_input(Player *player, char input, int *stoped);
 
+void apply_menu_input(Menu_config *menuConf, char input, int *stoped);
 
 void *input_Handler(void *raw_args);
 
+void input_quit(int *stoped, void *args);
 
-void input_quit(Player *player, int *stoped);
 
+void input_move_left(int *stoped, void *args);
+void input_move_right(int *stoped, void *args);
+void input_move_up(int *stoped, void *args);
+void input_move_down(int *stoped, void *args);
+void input_DEBUG(int *stoped, void *args);
 
-void input_move_left(Player *player, int *stoped);
-void input_move_right(Player *player, int *stoped);
-void input_move_up(Player *player, int *stoped);
-void input_move_down(Player *player, int *stoped);
-void input_DEBUG(Player *player, int *stoped);
+void menu_input_up(int *stoped, void *args);
+void menu_input_down(int *stoped, void *args);
+void menu_input_enter(int *stoped, void *args);
+void menu_input_return(int *stoped, void *args);
 

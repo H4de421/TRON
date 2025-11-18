@@ -6,7 +6,7 @@
 #include "Inputs.h"
 #include "Game/Player.h"
 
-void start_game(BoardContent *raw_args_board, struct inputsArgs *raw_args_input,
+void start_game(BoardContent *raw_args_board, Inputs_args *raw_args_input,
                 int *stoped)
 {
     String *buffer = raw_args_board->buffer;

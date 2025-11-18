@@ -7,10 +7,11 @@
 #include <unistd.h>
 
 #include "Display/Board.h"
+#include "Display/DisplayLoop.h"
 #include "Game/Game.h"
 #include "Inputs.h"
 #include "globals.h"
-#include "Display/Menu.h"
+#include "Menu/MenuLoop.h"
 
 struct termios old_termios;
 
@@ -92,7 +93,7 @@ int main(void)
 
     // input thread preparation
     // TODO RENAME THIS STRUCT
-    struct inputsArgs *raw_args_input = malloc(sizeof(struct inputsArgs));
+    Inputs_args *raw_args_input = malloc(sizeof(Inputs_args));
     raw_args_input->stop = &stoped;
     raw_args_input->read_char = &read_char;
     raw_args_input->next_char = &next_char;
@@ -101,6 +102,7 @@ int main(void)
     pthread_t input_thread;
     pthread_create(&input_thread, NULL, input_Handler, raw_args_input);
 
+     
     /*--------------*\
     | display thread |
     \*--------------*/
@@ -114,13 +116,31 @@ int main(void)
     raw_args_board->grid = create_grid(GRID_WIDTH, GRID_HEIGHT);
 
     pthread_t display_thread;
-    pthread_create(&display_thread, NULL, updateBoardLoop, raw_args_board);
+    pthread_create(&display_thread, NULL, updateDisplayLoop, raw_args_board);
 
-    /*--------------------*\
-    | Game section         |
-    \*--------------------*/
+    /*-------------------------*\
+    | main loop section         |
+    \*-------------------------*/ 
 
-    display_menu(buffer);
+    GAME_STATE state = MAIN_MENU;
+
+
+    while (!stoped)
+    {
+        switch (state) {
+            case MAIN_MENU:
+            menu_loop(buffer, &state, raw_args_input, &stoped);
+            break;
+            case GAME:
+            start_game(raw_args_board, raw_args_input, &stoped);
+            break;
+            case STOP:
+            stoped = 1;
+            break;
+        }
+    }
+
+    //display_menu(buffer);
     //start_game(raw_args_board, raw_args_input, &stoped);
 
     /*--------------------*\
