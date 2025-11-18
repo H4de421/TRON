@@ -1,0 +1,38 @@
+@startuml
+
+entity client1
+database server
+entity client2
+
+client1->server : connect
+server->client1 : ack
+client2->server : connect
+server->client2 : ack
+
+note over client2 ,client1: \t\t\tstarting game\ngame start when 2 player are conected
+
+server->client1 : start
+server->client2 : start
+
+note over client2 ,client1: on event
+
+client1->server : input change
+client2->server : input change
+
+note over client2 ,client1: on tick
+server -> client1 : map + players_update
+server -> client2 : map + players_update
+
+legend
+Server will be structured like that:
+- 2 thread to handle player's client input
+- one last thread to handle game behavior  using input from the 2 others threads.
+
+Client will need at least 3 threads : 
+- one to catch input 
+- one to communicate with the server
+- one to display the game
+end legend
+
+
+@enduml

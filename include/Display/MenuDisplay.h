@@ -11,6 +11,7 @@
 
 typedef struct MenuOption {
     char *name;
+    char *color;
 } MenuOption ;  
 
 

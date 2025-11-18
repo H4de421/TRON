@@ -8,8 +8,8 @@
 #include "globals.h"
 
 const MenuOption optionList[NB_MENU_OPTION] = {
-    { .name="Start" },
-    { .name="Quit" }
+    { .name="Start", .color=BORDER_COLOR },
+    { .name="Quit" , .color=RED_COLOR}
 };  
 
 void display_main_title(String *buffer, int x, int y)
@@ -39,20 +39,20 @@ void display_menu_options(int cursor, String *buffer)
 
     for (int i =0; i<NB_MENU_OPTION; i++)
     {
-        char final_name[170];
+        char final_name[250];
         char temp_name[130];
 
         const MenuOption option = optionList[i];
-        sprintf(temp_name, "%d - %s", i, option.name);
+        sprintf(temp_name, "\e[3m%d - %s", i, option.name);
         
 
         const int option_y = init_y + (i * (MENU_OPTION_H_SIZE+MENU_OPTION_H_MARGIN));
         const int option_x = (CANVAS_WIDTH / 2) - (strlen(temp_name) / 2);
-    
-        char color[15];
-        sprintf(color,"\x1b[%d;5;247m", ((i==cursor)?48:38));
 
-        sprintf(final_name, "\e[%d:%dH%s%s%s", option_y, option_x, color ,temp_name, NO_COLOR);
+        /*╭┐ 1 - Tron
+          ╰────────────■*/
+
+        sprintf(final_name, "\e[3m\e[%d:%dH%s╭┐ %s\e[%d:%dH╰───────────────■%s", option_y, option_x, (i==cursor ? option.color : NO_COLOR),temp_name, option_y+1, option_x,NO_COLOR);
         
         addToString(buffer, final_name, 150);
     }

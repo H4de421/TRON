@@ -5,8 +5,6 @@
 
 #include "Display/Board.h"
 #include "Display/Colors.h"
-#define GRID_WIDTH_default 25
-#define GRID_HEIGHT_default 15
 
 void draw_colision_anim(Player *player, String *buffer, pthread_mutex_t *mutex,
                         int duration)
@@ -14,9 +12,9 @@ void draw_colision_anim(Player *player, String *buffer, pthread_mutex_t *mutex,
     Dir dir = player->dir;
     int grid_x = player->grid_x + (dir == RIGHT ? 1 : (dir == LEFT ? -1 : 0));
     int grid_y = player->grid_y + (dir == DOWN ? 1 : (dir == UP ? -1 : 0));
-    if (grid_x < 0 || grid_x >= GRID_WIDTH_default)
+    if (grid_x < 0 || grid_x >= GRID_WIDTH)
         grid_x -= (dir == RIGHT ? 1 : (dir == LEFT ? -1 : 0));
-    if (grid_y < 0 || grid_y >= GRID_HEIGHT_default)
+    if (grid_y < 0 || grid_y >= GRID_HEIGHT)
         grid_y -= (dir == DOWN ? 1 : (dir == UP ? -1 : 0));
 
     int shift_w = SHIFT_WIDTH + WIDTH_ID_TO_DISPLAY_ID((grid_x + 1));

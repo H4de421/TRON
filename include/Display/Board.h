@@ -13,9 +13,6 @@
 #define MIN_GRID_HEIGHT 25
 #define MIN_GRID_WIDTH 50
 
-//#define GRID_WIDTH_default 25
-//#define GRID_HEIGHT_default 15
-
 #define FPS 60
 
 typedef struct BoardContent {

@@ -11,3 +11,4 @@ extern char TITLE_COLOR[15];
 
 extern char NO_COLOR[15];
 
+extern char RED_COLOR[15];
