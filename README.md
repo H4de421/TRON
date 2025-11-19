@@ -7,6 +7,23 @@ The last player still riding is the winner.
 
 ---
 
+## how to play
+
+This game can be played on keyboard only.
+current keymaps:
+
+MainMenu:
+ - z move cursor up 
+ - s move cursor down
+ - e select an option (enter)
+ - a abort
+
+Game:
+ - z move up
+ - d move right
+ - q move left
+ - s move down
+
 ## Project specification
 
 ### Interactive CLI
@@ -41,8 +58,6 @@ for now multiples ways are considered.
 
 Here is a list of features I have considered and explored.
 All features on this list are awaiting integration into this project.
-
-+ main menu
 
 + multiplayer (local server)
 
