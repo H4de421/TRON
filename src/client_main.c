@@ -11,7 +11,7 @@
 #include "Game/Game.h"
 #include "Inputs.h"
 #include "Menu/MenuLoop.h"
-#include "Multiplayer/server.h"
+#include "Multiplayer/client.h"
 #include "globals.h"
 
 struct termios old_termios;
@@ -122,28 +122,7 @@ int main(void)
     | main loop section         |
     \*-------------------------*/
 
-    GAME_STATE state = MULTI;
-    printf("launching multi\n");
-
-    while (!stoped)
-    {
-        switch (state)
-        {
-        case MAIN_MENU:
-            menu_loop(buffer, &state, raw_args_input, &stoped);
-            break;
-        case GAME:
-            start_game(raw_args_board, raw_args_input, &stoped);
-            break;
-        case MULTI:
-            launch_multi(&stoped, raw_args_board);
-            state = STOP;
-            break;
-        case STOP:
-            stoped = 1;
-            break;
-        }
-    }
+    client_init(raw_args_board, &stoped);
 
     // display_menu(buffer);
     // start_game(raw_args_board, raw_args_input, &stoped);
@@ -158,7 +137,7 @@ int main(void)
 
     free(raw_args_input);
     //    clear_grid(HEIGHT_ID_TO_DISPLAY_ID(G_GRID_WIDTH));
-    // printf("\e[0;0H");
+    printf("\e[0;0H");
     fflush(stdout);
     return 0;
 }

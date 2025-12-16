@@ -11,9 +11,9 @@ void start_game(BoardContent *raw_args_board, Inputs_args *raw_args_input,
 {
     String *buffer = raw_args_board->buffer;
 
-    draw_basic_grid(raw_args_board->buffer, GRID_WIDTH, GRID_HEIGHT);
-    int player_x = GRID_WIDTH / 8 + 1;
-    int player_y = GRID_HEIGHT / 2 + 1;
+    draw_basic_grid(raw_args_board->buffer, G_GRID_WIDTH, G_GRID_HEIGHT);
+    int player_x = G_GRID_WIDTH / 8 + 1;
+    int player_y = G_GRID_HEIGHT / 2 + 1;
     Player *player = create_player(player_x, player_y, PLAYER_COLOR);
     draw_player(player, buffer, raw_args_board->grid);
 

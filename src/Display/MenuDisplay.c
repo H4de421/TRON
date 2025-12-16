@@ -35,7 +35,7 @@ void display_main_title(String *buffer, int x, int y)
 
 void display_menu_options(int cursor, String *buffer)
 {
-    const int init_y = ((CANVAS_HEIGHT * 7) / 8) - ( NB_MENU_OPTION * MENU_OPTION_H_SIZE + (NB_MENU_OPTION-1) * MENU_OPTION_H_MARGIN );
+    const int init_y = ((G_CANVAS_HEIGHT * 7) / 8) - ( NB_MENU_OPTION * G_MENU_OPTION_H_SIZE + (NB_MENU_OPTION-1) * G_MENU_OPTION_H_MARGIN );
 
     for (int i =0; i<NB_MENU_OPTION; i++)
     {
@@ -46,8 +46,8 @@ void display_menu_options(int cursor, String *buffer)
         sprintf(temp_name, "\e[3m%d - %s", i, option.name);
         
 
-        const int option_y = init_y + (i * (MENU_OPTION_H_SIZE+MENU_OPTION_H_MARGIN));
-        const int option_x = (CANVAS_WIDTH / 2) - (strlen(temp_name) / 2);
+        const int option_y = init_y + (i * (G_MENU_OPTION_H_SIZE+G_MENU_OPTION_H_MARGIN));
+        const int option_x = (G_CANVAS_WIDTH / 2) - (strlen(temp_name) / 2);
 
         /*╭┐ 1 - Tron
           ╰────────────■*/
@@ -60,8 +60,8 @@ void display_menu_options(int cursor, String *buffer)
 
 void display_menu(String *buffer)
 {
-    int title_y = (CANVAS_HEIGHT /4 ) - (MAIN_TITLE_HEIGHT / 2); 
-    int title_x = (CANVAS_WIDTH / 2 ) - (MAIN_TITLE_WIDTH / 2); 
+    int title_y = (G_CANVAS_HEIGHT /4 ) - (MAIN_TITLE_HEIGHT / 2); 
+    int title_x = (G_CANVAS_WIDTH / 2 ) - (MAIN_TITLE_WIDTH / 2); 
 
     display_main_title(buffer, title_x, title_y);
 

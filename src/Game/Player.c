@@ -26,8 +26,8 @@ int move_player(Player *player, String *buffer, char *grid)
     // compute new value
     int grid_x = player->grid_x + (dir == RIGHT ? 1 : (dir == LEFT ? -1 : 0));
     int grid_y = player->grid_y + (dir == DOWN ? 1 : (dir == UP ? -1 : 0));
-    if (grid_x < 0 || grid_x >= GRID_WIDTH || grid_y < 0
-        || grid_y >= GRID_HEIGHT)
+    if (grid_x < 0 || grid_x >= G_GRID_WIDTH || grid_y < 0
+        || grid_y >= G_GRID_HEIGHT)
     {
         player->colision = 1;
         return 1;
@@ -81,8 +81,9 @@ static void get_trail_curve(Dir dir, Dir old_dir, char buffer[5])
 
 void draw_trail(Player *player, String *buffer)
 {
-    int shift_w = SHIFT_WIDTH + WIDTH_ID_TO_DISPLAY_ID((player->grid_x + 1));
-    int shift_h = SHIFT_HEIGHT + HEIGHT_ID_TO_DISPLAY_ID((player->grid_y + 1));
+    int shift_w = G_SHIFT_WIDTH + WIDTH_ID_TO_DISPLAY_ID((player->grid_x + 1));
+    int shift_h =
+        G_SHIFT_HEIGHT + HEIGHT_ID_TO_DISPLAY_ID((player->grid_y + 1));
     int nb_draw = (player->dir > 1 ? 5 : 2);
     int start = 0;
 
@@ -113,8 +114,9 @@ void draw_trail(Player *player, String *buffer)
 
 void draw_player(Player *player, String *buffer, char *grid)
 {
-    int shift_w = SHIFT_WIDTH + WIDTH_ID_TO_DISPLAY_ID((player->grid_x + 1));
-    int shift_h = SHIFT_HEIGHT + HEIGHT_ID_TO_DISPLAY_ID((player->grid_y + 1));
+    int shift_w = G_SHIFT_WIDTH + WIDTH_ID_TO_DISPLAY_ID((player->grid_x + 1));
+    int shift_h =
+        G_SHIFT_HEIGHT + HEIGHT_ID_TO_DISPLAY_ID((player->grid_y + 1));
     char temp[50];
     sprintf(temp, "\e[%d;%dH%s■\e[0m", shift_h, shift_w, player->color);
     addToString(buffer, temp, 50);

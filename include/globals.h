@@ -1,8 +1,11 @@
 #pragma once
 
+#include <pthread.h>
+
 typedef enum GAME_STATE {
     MAIN_MENU,
     GAME,
+    MULTI,
     STOP
 } GAME_STATE;
 
@@ -10,19 +13,29 @@ typedef enum GAME_STATE {
 | Canvas variables |
 \*----------------*/
 #define NB_SCENE 2
-extern int CANVAS_HEIGHT;
-extern int CANVAS_WIDTH;
+extern int G_CANVAS_HEIGHT;
+extern int G_CANVAS_WIDTH;
 
 /*----------------*\
 | Menu variables   |
 \*----------------*/
-extern int MENU_OPTION_H_SIZE;
-extern int MENU_OPTION_H_MARGIN; 
+extern int G_MENU_OPTION_H_SIZE;
+extern int G_MENU_OPTION_H_MARGIN; 
 
 /*----------------*\
 | Grid variables   |
 \*----------------*/
-extern int GRID_HEIGHT;
-extern int GRID_WIDTH;
-extern int SHIFT_WIDTH;
-extern int SHIFT_HEIGHT;
+extern int G_GRID_HEIGHT;
+extern int G_GRID_WIDTH;
+extern int G_SHIFT_WIDTH;
+extern int G_SHIFT_HEIGHT;
+
+/*----------------*\
+| server variables |
+\*----------------*/
+extern char G_IP[20];
+extern char G_PORT[5];
+extern char G_IS_CLIENT;
+extern char G_SERVER_FD;
+extern int G_SOCKET;
+

@@ -19,29 +19,29 @@ int adjust_grid_size(int *width, int *height)
 {
     struct winsize ws;
     ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws);
-    CANVAS_WIDTH = ws.ws_col;
-    CANVAS_HEIGHT = ws.ws_row;
-    clear_grid(CANVAS_HEIGHT);
+    G_CANVAS_WIDTH = ws.ws_col;
+    G_CANVAS_HEIGHT = ws.ws_row;
+    clear_grid(G_CANVAS_HEIGHT);
     int border_H_size = 2;
     int border_W_size = 2;
 
 
 
-    if (CANVAS_HEIGHT < MIN_GRID_HEIGHT + border_H_size
-        || CANVAS_WIDTH < MIN_GRID_WIDTH + border_W_size)
+    if (G_CANVAS_HEIGHT < MIN_GRID_HEIGHT + border_H_size
+        || G_CANVAS_WIDTH < MIN_GRID_WIDTH + border_W_size)
     {
-        printf("\e[%d;%dHNot enougth space!", CANVAS_HEIGHT / 2,
-               (CANVAS_WIDTH / 2) - 9);
-        printf("\e[%d;0H", CANVAS_HEIGHT - 2);
+        printf("\e[%d;%dHNot enougth space!", G_CANVAS_HEIGHT / 2,
+               (G_CANVAS_WIDTH / 2) - 9);
+        printf("\e[%d;0H", G_CANVAS_HEIGHT - 2);
         fflush(stdout);
         sleep(2);
         return 1;
     }
     else
     {
-        draw_borders(CANVAS_WIDTH, CANVAS_HEIGHT);
-        *width = (((CANVAS_WIDTH - border_W_size) -1 ) / 5);
-        *height = (((CANVAS_HEIGHT - border_H_size) - 1) / 2);
+        draw_borders(G_CANVAS_WIDTH, G_CANVAS_HEIGHT);
+        *width = (((G_CANVAS_WIDTH - border_W_size) -1 ) / 5);
+        *height = (((G_CANVAS_HEIGHT - border_H_size) - 1) / 2);
     }
 
     return 0;
@@ -111,7 +111,7 @@ void draw_basic_grid(String *buffer, int width, int height)
     for (int i = 0; i < max_lines; i++)
     {
         char str[30];
-        sprintf(str, "\e[%d;%dH", i + SHIFT_HEIGHT + 1, SHIFT_WIDTH + 1);
+        sprintf(str, "\e[%d;%dH", i + G_SHIFT_HEIGHT + 1, G_SHIFT_WIDTH + 1);
         printf("%s", GRID_COLOR);
         addToString(buffer, str, 10);
         if (i % 2 == 0)

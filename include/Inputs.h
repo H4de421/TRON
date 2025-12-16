@@ -47,3 +47,8 @@ void menu_input_down(int *stoped, void *args);
 void menu_input_enter(int *stoped, void *args);
 void menu_input_return(int *stoped, void *args);
 
+
+void client_move_right(int *stoped, void *args);
+void client_move_left(int *stoped, void *args);
+void client_move_down(int *stoped, void *args);
+void client_move_up(int *stoped, void *args);
