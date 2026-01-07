@@ -4,15 +4,17 @@
 
 typedef enum GAME_STATE {
     MAIN_MENU,
+    MULTI_MENU,
     GAME,
-    MULTI,
+    SERVER,
+    CLIENT,
     STOP
 } GAME_STATE;
 
 /*----------------*\
 | Canvas variables |
 \*----------------*/
-#define NB_SCENE 2
+#define NB_SCENE 3
 extern int G_CANVAS_HEIGHT;
 extern int G_CANVAS_WIDTH;
 
@@ -38,4 +40,9 @@ extern char G_PORT[5];
 extern char G_IS_CLIENT;
 extern char G_SERVER_FD;
 extern int G_SOCKET;
+extern char G_SERVER_LOGGING[20];
+extern char G_CLIENT_LOGGING[20];
+extern int G_PLAYER_ID;
+
+
 

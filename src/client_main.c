@@ -12,6 +12,7 @@
 #include "Inputs.h"
 #include "Menu/MenuLoop.h"
 #include "Multiplayer/client.h"
+#include "Multiplayer/network.h"
 #include "globals.h"
 
 struct termios old_termios;
@@ -115,13 +116,14 @@ int main(void)
     raw_args_board->buffer = buffer;
     raw_args_board->grid = create_grid(G_GRID_WIDTH, G_GRID_HEIGHT);
 
-    // pthread_t display_thread;
-    // pthread_create(&display_thread, NULL, updateDisplayLoop, raw_args_board);
+    pthread_t display_thread;
+    pthread_create(&display_thread, NULL, updateDisplayLoop, raw_args_board);
 
     /*-------------------------*\
     | main loop section         |
     \*-------------------------*/
 
+    prepare_logging(G_CLIENT_LOGGING, 2); // STDERR
     client_init(raw_args_board, &stoped);
 
     // display_menu(buffer);
@@ -131,13 +133,13 @@ int main(void)
     | end Game section     |
     \*--------------------*/
 
-    // pthread_join(display_thread, NULL);
+    pthread_join(display_thread, NULL);
     pthread_join(input_thread, NULL);
     destroy_board(raw_args_board);
 
     free(raw_args_input);
     //    clear_grid(HEIGHT_ID_TO_DISPLAY_ID(G_GRID_WIDTH));
-    printf("\e[0;0H");
+    // printf("\e[0;0H");
     fflush(stdout);
     return 0;
 }

@@ -8,7 +8,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/epoll.h>
+#include <sys/param.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <time.h>
@@ -23,6 +25,43 @@
 #define EPOLL_QUEUE_LEN 2
 #define MAX_EPOLL_EVENTS_PER_RUN 6
 #define EPOLL_RUN_TIMEOUT -1
+
+static void server_process_message(char buffer[4096],
+                                   Server_listen_args *raw_args, int player)
+{
+    char *strsave = NULL;
+    enum message_type type = parse_method(strtok_r(buffer, ";", &strsave));
+    switch (type)
+    {
+    case SIZE: {
+        size_enum *content = parse_server_SIZE(strsave);
+        if (player == 1)
+        {
+            raw_args->map_col_p1 = content->nb_col;
+            raw_args->map_lin_p1 = content->nb_lin;
+        }
+        else
+        {
+            raw_args->map_col_p2 = content->nb_col;
+            raw_args->map_lin_p2 = content->nb_lin;
+        }
+        free(content);
+        break;
+    }
+    case IN: {
+        in_enum *content = parse_IN(strsave);
+        if (player)
+            *raw_args->dir_1 = content->dir;
+        else
+            *raw_args->dir_2 = content->dir;
+        printf("[server] player %d moved to the %d", player, content->dir);
+        free(content);
+        break;
+    }
+    default:
+        break;
+    }
+}
 
 void *server_listen(void *raw_args)
 {
@@ -46,7 +85,7 @@ void *server_listen(void *raw_args)
         close(player_2);
         close(socket_fd);
         *args->stoped = 1;
-        printf("error while adding p1 to epoll\n");
+        printf("[serv] error while adding p1 to epoll\n");
     }
 
     static struct epoll_event ev_p2;
@@ -58,7 +97,7 @@ void *server_listen(void *raw_args)
         close(player_2);
         close(socket_fd);
         *args->stoped = 1;
-        printf("error while adding p2 to epoll\n");
+        printf("[serv] error while adding p2 to epoll\n");
     }
 
     static struct epoll_event events[6];
@@ -70,7 +109,7 @@ void *server_listen(void *raw_args)
         if (nfds < 0)
         {
             *args->stoped = 1;
-            printf("Error in epoll_wait!\n");
+            printf("[serv] Error in epoll_wait!\n");
         }
 
         for (int i = 0; i < nfds; i++)
@@ -86,15 +125,18 @@ void *server_listen(void *raw_args)
             if (events[i].events & EPOLLIN)
             {
                 // TODO LOGS
-                char *buffer = malloc(64);
+                char *buffer = malloc(4096);
                 int size = 0;
-                printf("trying to read from p%d\n", events[i].data.fd);
                 int size_msg = receve_data(&buffer, events[i].data.fd, &size);
-                free(buffer);
                 if (size_msg != -1)
+                {
                     printf("[server]log receved from p%d\n", i + 1);
+                    server_process_message(buffer, raw_args,
+                                           1 + (fd == player_2));
+                }
                 else
                     *args->stoped = 1;
+                free(buffer);
             }
         }
         nanosleep(&ts, NULL);
@@ -105,7 +147,7 @@ void *server_listen(void *raw_args)
     return NULL;
 }
 
-void waiting_2_players(int sockets[2], int socket_fd, int *stoped)
+static void waiting_2_players(int sockets[2], int socket_fd, int *stoped)
 {
     // wait for 2 players to connect
     while (!*stoped)
@@ -135,6 +177,59 @@ void waiting_2_players(int sockets[2], int socket_fd, int *stoped)
     }
 }
 
+// prepare communication and send information for locals games for both
+// client
+static void prepare_game(struct server_listen_args *raw_args)
+{
+    struct timespec ts;
+    ts.tv_sec = 0;
+    ts.tv_nsec = 25000000;
+    // send size message
+    send_message(SIZE, raw_args->player_1, "");
+    send_message(SIZE, raw_args->player_2, "");
+
+    // wait for both player to respond
+
+    while (raw_args->map_col_p2 == -1 || raw_args->map_lin_p2 == -1
+           || raw_args->map_col_p1 == -1 || raw_args->map_lin_p1 == -1)
+    {
+        nanosleep(&ts, NULL);
+    }
+    // choose minimal one
+    int final_col = MIN(raw_args->map_col_p1, raw_args->map_col_p2);
+    int final_lin = MIN(raw_args->map_lin_p1, raw_args->map_lin_p2);
+
+    // compute playes positions
+    int p1_x = 1;
+    int p1_y = final_lin - 2;
+    int p2_x = final_col - 2;
+    int p2_y = 1;
+
+    // send final size + all informations
+    send_message(INIT, raw_args->player_1, "1;%d;%d;%d;%d;%d;%d;", final_col,
+                 final_lin, p1_x, p1_y, p2_x, p2_y);
+    send_message(INIT, raw_args->player_2, "2;%d;%d;%d;%d;%d;%d;", final_col,
+                 final_lin, p1_x, p1_y, p2_x, p2_y);
+
+    ts.tv_nsec = 200000000;
+
+    // start
+    send_message(START, raw_args->player_1, "");
+    send_message(START, raw_args->player_2, "");
+}
+
+static void server_game_loop(struct server_listen_args *raw_args)
+{
+    // TODO impement server_logic
+    // prepare_game
+    prepare_game(raw_args);
+    // run main loop
+    while (!*raw_args->stoped)
+    {
+    }
+    return;
+}
+
 void server_init(int *stoped)
 {
     // launch socket
@@ -157,8 +252,7 @@ void server_init(int *stoped)
     pthread_mutex_init(&m_dir_p2, NULL);
 
     // preparing listen thread arguments
-    struct server_listen_args *raw_args =
-        malloc(sizeof(struct server_listen_args));
+    Server_listen_args *raw_args = malloc(sizeof(struct server_listen_args));
     raw_args->stoped = stoped;
     raw_args->socket_fd = socket_fd;
     raw_args->player_1 = sockets[0];
@@ -167,21 +261,20 @@ void server_init(int *stoped)
     raw_args->m_dir_1 = &m_dir_p1;
     raw_args->dir_2 = &p2;
     raw_args->m_dir_1 = &m_dir_p1;
+    raw_args->map_col_p1 = -1;
+    raw_args->map_lin_p1 = -1;
+    raw_args->map_col_p2 = -1;
+    raw_args->map_lin_p2 = -1;
+
+    // init game
 
     // launch listening thread.
     pthread_t listen_thread;
     pthread_create(&listen_thread, NULL, server_listen, raw_args);
 
-    // launch game computing thread;
-    printf("[serv] sending data\n");
-    send_data("u r p1\n", sockets[0], 7);
-    send_data("u r p2\n", sockets[1], 7);
+    server_game_loop(raw_args);
 
-    while (!*stoped)
-    {
-        sleep(1);
-    }
-
+    //*stoped = 1;
     pthread_join(listen_thread, NULL);
     free(raw_args);
 }
@@ -198,17 +291,16 @@ void launch_multi(int *stoped, BoardContent *board_args)
         break;
     case 0:
         // child
-        printf("[serv] launching server_init\n");
+        prepare_logging(G_SERVER_LOGGING, 1); // STDOUT
         server_init(stoped);
         exit(0);
         break;
     default:
         // parent
-        printf("[client] launching client_init\n");
+        prepare_logging(G_CLIENT_LOGGING, 2); // STDERR
         client_init(board_args, stoped);
         break;
     }
     waitpid(pid, NULL, 0);
     printf("server exited normaly");
-    sleep(3);
 }

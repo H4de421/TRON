@@ -1,9 +1,10 @@
+#include <time.h>
 #define _GNU_SOURCE
-#include "Multiplayer/network.h"
-
 #include <err.h>
+#include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -11,9 +12,141 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "Multiplayer/network.h"
+#include "globals.h"
+
+#define NB_METHOD 6
+#define MESSAGE_MAX_SIZE 4096
+
+struct method_e_str
+{
+    char *str;
+    enum message_type type;
+};
+
+struct method_e_str method_trad[NB_METHOD] = {
+    { "INIT", INIT },   { "SIZE", SIZE }, { "TICK", TICK },
+    { "START", START }, { "IN", IN },     { "ERROR", ERROR }
+};
+enum message_type parse_method(char *method)
+{
+    for (int i = 0; i < NB_METHOD; i++)
+    {
+        if (strcmp(method, method_trad[i].str) == 0)
+            return method_trad[i].type;
+    }
+    return ERROR;
+}
+
+void send_message(enum message_type method, int fd, char *format, ...)
+{
+    char final_message[MESSAGE_MAX_SIZE];
+    sprintf(final_message, "%s;", method_trad[method].str);
+    memcpy(final_message, method_trad[method].str,
+           strlen(method_trad[method].str));
+    va_list args;
+    size_t size = strlen(method_trad[method].str);
+    final_message[size++] = ';';
+    for (va_start(args, format); *format != '\0'; ++format)
+    {
+        if (*format == '%')
+        {
+            ++format;
+            switch (*format)
+            {
+            case 's': {
+                char *content = va_arg(args, char *);
+                memcpy(final_message + (size++), content, (int)sizeof(content));
+                size += sizeof(content);
+                break;
+            }
+            case 'd': {
+                int i = va_arg(args, int);
+                char content[1028];
+                sprintf(content, "%d", i);
+                sprintf(final_message + size, "%d;", i);
+                size += strlen(content);
+                break;
+            }
+            default:
+                final_message[size++] = '%';
+                final_message[size++] = *format;
+                break;
+            }
+        }
+        else
+        {
+            final_message[size++] = *format;
+        }
+    }
+    final_message[size++] = '\n';
+    fflush(stdout);
+    send_data(final_message, fd, size);
+}
+
+init_enum *parse_INIT(char *content)
+{
+    init_enum *res = calloc(1, sizeof(init_enum));
+    if (content == NULL)
+        return res;
+    char *savestr = NULL;
+    char *p_id = strtok_r(content, ";", &savestr);
+    char *max_c = strtok_r(NULL, ";", &savestr);
+    char *max_l = strtok_r(NULL, ";", &savestr);
+    char *p1_x = strtok_r(NULL, ";", &savestr);
+    char *p1_y = strtok_r(NULL, ";", &savestr);
+    char *p2_x = strtok_r(NULL, ";", &savestr);
+    char *p2_y = strtok_r(NULL, ";", &savestr);
+    /*printf("\n%s | %s | %s | %s | %s | %s | %s\n", p_id, max_c, max_l, p1_x,
+           p1_y, p2_x, p2_y);*/
+    res->player_id = atoi(p_id);
+    res->max_c = atoi(max_c);
+    res->max_l = atoi(max_l);
+    res->p1_x = atoi(p1_x);
+    res->p1_y = atoi(p1_y);
+    res->p2_x = atoi(p2_x);
+    res->p2_y = atoi(p2_y);
+    return res;
+}
+
+in_enum *parse_IN(char *content)
+{
+    in_enum *res = calloc(1, sizeof(in_enum));
+    if (content == NULL)
+        return res;
+    char *savestr = NULL;
+    char *dir = strtok_r(content, ";", &savestr);
+    res->dir = atoi(dir);
+    return res;
+}
+
+size_enum *parse_server_SIZE(char *content)
+{
+    size_enum *res = calloc(1, sizeof(size_enum));
+    if (content == NULL)
+        return res;
+    char *savestr = NULL;
+    char *max_c = strtok_r(content, ";", &savestr);
+    char *max_l = strtok_r(NULL, ";", &savestr);
+    res->nb_col = atoi(max_c);
+    res->nb_lin = atoi(max_l);
+    return res;
+}
+
+tick_enum *parse_TICK(char *content)
+{
+    tick_enum *res = calloc(1, sizeof(tick_enum));
+    char *savestr;
+    char *p1_d = strtok_r(content, ";", &savestr);
+    char *p2_d = strtok_r(NULL, ";", &savestr);
+    res->p1_d = atoi(p1_d);
+    res->p2_d = atoi(p2_d);
+    return res;
+}
+
 int is_alive(int sock)
 {
-    const char *ping = "PING\n";
+    const char *ping = "PING;\n";
     int ret = send(sock, ping, strlen(ping), MSG_NOSIGNAL | MSG_DONTWAIT);
     if (ret == -1)
     {
@@ -81,23 +214,31 @@ int receve_data(char **buffer, int socket, int *buffer_size)
     int read = last_read;
     while (last_read > 0 && (*buffer)[read - 1] != '\n')
     {
+        // fprintf(stderr,
+        //         "[server read] last read %d / read %d / size %d / current
+        //         last " "char %c\n", last_read, read, *buffer_size,
+        //         (*buffer)[read - 1]);
         *buffer_size += last_read;
         *buffer = realloc(*buffer, *buffer_size);
         last_read = recv(socket, (*buffer) + read, 64, MSG_NOSIGNAL);
         if (last_read == -1)
         {
-            printf("can't read\n");
             return -1;
         }
         read += last_read;
     }
-    if (!last_read)
+    if (read <= 0)
     {
         return -1;
     }
+    //    fprintf(stderr,
+    //            "[server read] EN",
+    //            *buffer_size + 1, read);
 
     *buffer = realloc(*buffer, *buffer_size + 1);
     (*buffer)[read] = '\0';
+
+    // fprintf(stderr, "read : %s\n", *buffer);
 
     return read;
 }
@@ -119,4 +260,21 @@ int send_data(char *buffer, int socket, int size)
     }*/
 
     return sended;
+}
+
+void prepare_logging(char *name, int fd)
+{
+    int file =
+        open(name, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    if (!file)
+    {
+        fprintf(stderr, "[serv] can't open file");
+        return;
+    }
+    int res = dup2(file, fd);
+    if (res == -1)
+    {
+        fprintf(stderr, "[serv] can't dup2");
+        return;
+    }
 }

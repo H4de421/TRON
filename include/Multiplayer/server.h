@@ -3,7 +3,7 @@
 #define _GNU_SOURCE
 #include "Game/Player.h"
 
-struct server_listen_args {
+typedef struct server_listen_args {
     int *stoped;
     int socket_fd;
     int player_1;
@@ -12,7 +12,11 @@ struct server_listen_args {
     pthread_mutex_t *m_dir_1;
     Dir *dir_2;
     pthread_mutex_t *m_dir_2;
-};
+    int map_col_p1;
+    int map_lin_p1;
+    int map_col_p2;
+    int map_lin_p2;
+} Server_listen_args;
 
 
 void *server_listen(void *raw_args);

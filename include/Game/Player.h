@@ -3,16 +3,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include "Game/Dir.h"
 
 #include "Utils/String.h"
 #include "Display/Board.h"
 
-typedef enum Dir {
-    UP,
-    DOWN,
-    LEFT,
-    RIGHT
-} Dir;
 
 typedef struct TrailNode {
     int grid_x;

@@ -25,8 +25,6 @@ int adjust_grid_size(int *width, int *height)
     int border_H_size = 2;
     int border_W_size = 2;
 
-
-
     if (G_CANVAS_HEIGHT < MIN_GRID_HEIGHT + border_H_size
         || G_CANVAS_WIDTH < MIN_GRID_WIDTH + border_W_size)
     {
@@ -40,13 +38,12 @@ int adjust_grid_size(int *width, int *height)
     else
     {
         draw_borders(G_CANVAS_WIDTH, G_CANVAS_HEIGHT);
-        *width = (((G_CANVAS_WIDTH - border_W_size) -1 ) / 5);
+        *width = (((G_CANVAS_WIDTH - border_W_size) - 1) / 5);
         *height = (((G_CANVAS_HEIGHT - border_H_size) - 1) / 2);
     }
 
     return 0;
 }
-
 
 char *create_grid(int width, int height)
 {
@@ -165,4 +162,3 @@ void draw_basic_grid(String *buffer, int width, int height)
     }
     // printf("%s", NO_COLOR);
 }
-

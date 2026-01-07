@@ -11,6 +11,8 @@
 #include "Game/Game.h"
 #include "Inputs.h"
 #include "Menu/MenuLoop.h"
+#include "Multiplayer/client.h"
+#include "Multiplayer/network.h"
 #include "Multiplayer/server.h"
 #include "globals.h"
 
@@ -115,29 +117,33 @@ int main(void)
     raw_args_board->buffer = buffer;
     raw_args_board->grid = create_grid(G_GRID_WIDTH, G_GRID_HEIGHT);
 
-    // pthread_t display_thread;
-    // pthread_create(&display_thread, NULL, updateDisplayLoop, raw_args_board);
+    pthread_t display_thread;
+    pthread_create(&display_thread, NULL, updateDisplayLoop, raw_args_board);
 
     /*-------------------------*\
     | main loop section         |
     \*-------------------------*/
 
-    GAME_STATE state = MULTI;
-    printf("launching multi\n");
+    GAME_STATE state = MAIN_MENU;
 
     while (!stoped)
     {
         switch (state)
         {
+        case MULTI_MENU:
         case MAIN_MENU:
             menu_loop(buffer, &state, raw_args_input, &stoped);
             break;
         case GAME:
             start_game(raw_args_board, raw_args_input, &stoped);
             break;
-        case MULTI:
+        case SERVER:
             launch_multi(&stoped, raw_args_board);
             state = STOP;
+            break;
+        case CLIENT:
+            prepare_logging(G_SERVER_LOGGING, 1);
+            client_init(raw_args_board, &stoped);
             break;
         case STOP:
             stoped = 1;
@@ -145,20 +151,15 @@ int main(void)
         }
     }
 
-    // display_menu(buffer);
-    // start_game(raw_args_board, raw_args_input, &stoped);
-
     /*--------------------*\
     | end Game section     |
     \*--------------------*/
 
-    // pthread_join(display_thread, NULL);
+    pthread_join(display_thread, NULL);
     pthread_join(input_thread, NULL);
     destroy_board(raw_args_board);
 
     free(raw_args_input);
-    //    clear_grid(HEIGHT_ID_TO_DISPLAY_ID(G_GRID_WIDTH));
-    // printf("\e[0;0H");
     fflush(stdout);
     return 0;
 }

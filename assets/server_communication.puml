@@ -4,24 +4,41 @@ entity client1
 database server
 entity client2
 
+activate server 
 client1->server : connect
-server->client1 : ack
 client2->server : connect
-server->client2 : ack
 
-note over client2 ,client1: \t\t\tstarting game\ngame start when 2 player are conected
+note over client2 ,client1: starting game\ngame start when 2 player are conected
 
-server->client1 : start
-server->client2 : start
+server->client1 : size  <SIZE>
+server->client2 : size  <SIZE>
+client1->server : size  <SIZE;"nb_c";"nb_l">
+client2->server : size  <SIZE;"nb_c";"nb_l">
+
+note over client1, client2: select min of both before sending final size
+
+server->client1 : init <INIT;1;"nb_c";"nb_l";\np1_posx;p1_posy;\np2_posx;p2_posy>  
+server->client2 : init <INIT;2;"nb_c";"nb_l";\np1_posx;p1_posy;\np2_posx;p2_posy> 
+
+server->client1 : start  <START>
+server->client2 : start  <START>
 
 note over client2 ,client1: on event
 
-client1->server : input change
-client2->server : input change
+client1->server : input change <IN;1;"code">
+client2->server : input change <IN;2;"code"> 
 
 note over client2 ,client1: on tick
-server -> client1 : map + players_update
-server -> client2 : map + players_update
+server -> client1 : map <TICK;p1_dir;p2_dir>
+server -> client2 : map <TICK;p1_dir;p2_dir>
+
+alt client quit
+server --x client1 : error
+server -> client2 : closing socket
+server -> client1 : closing socket
+
+end
+deactivate server
 
 legend
 Server will be structured like that:
