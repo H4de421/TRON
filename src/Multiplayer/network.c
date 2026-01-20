@@ -40,7 +40,7 @@ enum message_type parse_method(char *method)
 
 void send_message(enum message_type method, int fd, char *format, ...)
 {
-    char final_message[MESSAGE_MAX_SIZE];
+    char final_message[MESSAGE_MAX_SIZE] = { 0 };
     sprintf(final_message, "%s;", method_trad[method].str);
     memcpy(final_message, method_trad[method].str,
            strlen(method_trad[method].str));
@@ -57,7 +57,7 @@ void send_message(enum message_type method, int fd, char *format, ...)
             case 's': {
                 char *content = va_arg(args, char *);
                 memcpy(final_message + (size++), content, (int)sizeof(content));
-                size += sizeof(content);
+                size += strlen(content);
                 break;
             }
             case 'd': {
@@ -81,7 +81,9 @@ void send_message(enum message_type method, int fd, char *format, ...)
     }
     final_message[size++] = '\n';
     fflush(stdout);
-    send_data(final_message, fd, size);
+    printf("sending to %u : [%s]", fd, final_message);
+    int res = send_data(final_message, fd, size);
+    printf("send returned %d\n", res);
 }
 
 init_enum *parse_INIT(char *content)
@@ -200,6 +202,9 @@ int prepare_socket(const char *ip, const char *port)
     int socket_id = create_and_bind(servinfo);
 
     freeaddrinfo(servinfo);
+
+    int flags = fcntl(socket_id, F_GETFL);
+    fcntl(socket_id, F_SETFL, flags | O_NONBLOCK);
 
     listen(socket_id, SOMAXCONN);
     return socket_id;

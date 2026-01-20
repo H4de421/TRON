@@ -4,6 +4,11 @@
 // thoses will be overwrite at the start of the programs
 
 /*----------------*\
+| Global Var       |
+\*----------------*/
+int STOPED = 0;
+
+/*----------------*\
 | Canvas variables |
 \*----------------*/
 int G_CANVAS_HEIGHT = 25;

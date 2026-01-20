@@ -4,7 +4,6 @@
 #include "Game/Player.h"
 
 typedef struct server_listen_args {
-    int *stoped;
     int socket_fd;
     int player_1;
     int player_2;
@@ -20,6 +19,6 @@ typedef struct server_listen_args {
 
 
 void *server_listen(void *raw_args);
-void server_init(int *stoped);
-void launch_multi(int *stoped, BoardContent *board_args);
+void server_init(void);
+void launch_multi(BoardContent *board_args);
 

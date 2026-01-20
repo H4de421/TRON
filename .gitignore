@@ -1,2 +1,6 @@
 *.log
 *.o
+include/Utils/pretty_printer.h
+notes.txt
+src/Utils/pretty_printer.c
+src/client_main.old

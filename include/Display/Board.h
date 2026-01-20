@@ -19,7 +19,6 @@ typedef struct BoardContent {
     int width;
     int height;
     String *buffer;
-    int *stoped;
     char *grid;
     pthread_mutex_t *bufferMutex;
 } BoardContent ;

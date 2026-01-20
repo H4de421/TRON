@@ -13,16 +13,17 @@ TESTO=$(TEST:.c=.o)
 
 .PHONY: check
 
-all: main client
+all: main
 
 main: $(OBJS) src/main.o
 	$(CC) $(LDFLAGS) -o tron $^
 
-client: $(OBJS) src/client_main.o
-	$(CC) $(LDFLAGS) -o tron_c $^
-
 #AI: src/test_IA.o src/Display/Colors.o src/globals.o src/Utils/String.o src/Display/Board.o src/AI/minmax.o 
 #	$(CC) $(LDFLAGS) -o test $^
+
+clear_logs:
+	${RM} logs/Server.log
+	${RM} logs/Client.log
 
 clean:
 	${RM} ${OBJS} src/main.o src/client_main.o tron tron_c

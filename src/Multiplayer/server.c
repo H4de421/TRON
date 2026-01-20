@@ -1,6 +1,8 @@
 #include "Multiplayer/server.h"
 
+#include <asm-generic/errno.h>
 #include <err.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -20,6 +22,8 @@
 #include "Game/Player.h"
 #include "Multiplayer/client.h"
 #include "Multiplayer/network.h"
+#include "Utils/String.h"
+#include "Utils/pretty_printer.h"
 #include "globals.h"
 
 #define EPOLL_QUEUE_LEN 2
@@ -29,18 +33,28 @@
 static void server_process_message(char buffer[4096],
                                    Server_listen_args *raw_args, int player)
 {
+    printf("[serv] message receved : [%s]", buffer);
     char *strsave = NULL;
     enum message_type type = parse_method(strtok_r(buffer, ";", &strsave));
+    printf("-- method = %d\n", type);
     switch (type)
     {
     case SIZE: {
         size_enum *content = parse_server_SIZE(strsave);
+        printf("-- content = [%d,%d]\n", content->nb_col, content->nb_lin);
+
+        if (HEIGHT_ID_TO_DISPLAY_ID(content->nb_lin) < MIN_GRID_HEIGHT
+            || WIDTH_ID_TO_DISPLAY_ID(content->nb_col) < MIN_GRID_WIDTH)
+        {
+            printf("[serv] reciened a wrong size shutting down the server");
+            STOPED = 1;
+        }
         if (player == 1)
         {
             raw_args->map_col_p1 = content->nb_col;
             raw_args->map_lin_p1 = content->nb_lin;
         }
-        else
+        else if (player == 2)
         {
             raw_args->map_col_p2 = content->nb_col;
             raw_args->map_lin_p2 = content->nb_lin;
@@ -54,7 +68,7 @@ static void server_process_message(char buffer[4096],
             *raw_args->dir_1 = content->dir;
         else
             *raw_args->dir_2 = content->dir;
-        printf("[server] player %d moved to the %d", player, content->dir);
+        printf("-- player %d moved to the %d", player, content->dir);
         free(content);
         break;
     }
@@ -84,8 +98,9 @@ void *server_listen(void *raw_args)
         close(player_1);
         close(player_2);
         close(socket_fd);
-        *args->stoped = 1;
+        STOPED = 1;
         printf("[serv] error while adding p1 to epoll\n");
+        return NULL;
     }
 
     static struct epoll_event ev_p2;
@@ -96,19 +111,20 @@ void *server_listen(void *raw_args)
         close(player_1);
         close(player_2);
         close(socket_fd);
-        *args->stoped = 1;
+        STOPED = 1;
         printf("[serv] error while adding p2 to epoll\n");
+        return NULL;
     }
 
     static struct epoll_event events[6];
 
     // listen loop
-    while (!*args->stoped)
+    while (!STOPED)
     {
         int nfds = epoll_wait(epfd, events, MAX_EPOLL_EVENTS_PER_RUN, 0);
         if (nfds < 0)
         {
-            *args->stoped = 1;
+            STOPED = 1;
             printf("[serv] Error in epoll_wait!\n");
         }
 
@@ -120,7 +136,7 @@ void *server_listen(void *raw_args)
             {
                 epoll_ctl(epfd, EPOLL_CTL_DEL, fd, &events[i]);
                 printf("[serv] lost p%d\n", i + 1);
-                *args->stoped = 1;
+                STOPED = 1;
             }
             if (events[i].events & EPOLLIN)
             {
@@ -134,8 +150,8 @@ void *server_listen(void *raw_args)
                     server_process_message(buffer, raw_args,
                                            1 + (fd == player_2));
                 }
-                else
-                    *args->stoped = 1;
+                // else
+                //     STOPED = 1;
                 free(buffer);
             }
         }
@@ -147,33 +163,58 @@ void *server_listen(void *raw_args)
     return NULL;
 }
 
-static void waiting_2_players(int sockets[2], int socket_fd, int *stoped)
+static void waiting_2_players(int sockets[2], int socket_fd)
 {
     // wait for 2 players to connect
-    while (!*stoped)
+    while (!STOPED)
     {
         int nb_connected_players = 0;
 
-        while (nb_connected_players != 2)
+        while (nb_connected_players != 2 && !STOPED)
         {
-            printf("[serv] there is %d player in the room\n",
-                   nb_connected_players);
             int socket_p = accept4(socket_fd, NULL, NULL, SOCK_NONBLOCK);
             if (socket_p == -1)
             {
-                printf("[serv] accept gone wrong\n");
-                continue;
+                if (errno == EWOULDBLOCK)
+                {
+                    printf("[serv] no_pending_connection\n");
+                    printf("[serv] there is %d player in the room\n",
+                           nb_connected_players);
+                    sleep(1);
+                    continue;
+                }
+                else
+                {
+                    printf("[serv] error when accepting connections\n");
+                    STOPED = 1;
+                }
             }
 
             sockets[nb_connected_players] = socket_p;
             nb_connected_players++;
             printf("[serv] new player accepted: pid %d\n", socket_p);
+            printf("[serv] there is %d player in the room\n",
+                   nb_connected_players);
             sleep(1);
+        }
+        if (!is_alive(sockets[0]))
+        {
+            close(sockets[0]);
+            sockets[0] = -1;
+            printf("[serv] player 0 lost\n");
+            nb_connected_players--;
+        }
+        if (!is_alive(sockets[1]))
+        {
+            close(sockets[1]);
+            sockets[1] = -1;
+            printf("[serv] player 1 lost\n");
+            nb_connected_players--;
         }
         if (is_alive(sockets[0]) && is_alive(sockets[1]))
             break;
-        close(sockets[0]);
-        close(sockets[1]);
+        // close(sockets[0]);
+        // close(sockets[1]);
     }
 }
 
@@ -183,8 +224,14 @@ static void prepare_game(struct server_listen_args *raw_args)
 {
     struct timespec ts;
     ts.tv_sec = 0;
+    ts.tv_nsec = 200000000;
+
+    nanosleep(&ts, NULL);
+
     ts.tv_nsec = 25000000;
+    // TODO check for fd;
     // send size message
+
     send_message(SIZE, raw_args->player_1, "");
     send_message(SIZE, raw_args->player_2, "");
 
@@ -193,6 +240,7 @@ static void prepare_game(struct server_listen_args *raw_args)
     while (raw_args->map_col_p2 == -1 || raw_args->map_lin_p2 == -1
            || raw_args->map_col_p1 == -1 || raw_args->map_lin_p1 == -1)
     {
+        printf("[serv] waiting for SIZE response\n");
         nanosleep(&ts, NULL);
     }
     // choose minimal one
@@ -224,25 +272,36 @@ static void server_game_loop(struct server_listen_args *raw_args)
     // prepare_game
     prepare_game(raw_args);
     // run main loop
-    while (!*raw_args->stoped)
+    printf("preparation ended\n");
+    while (!STOPED)
     {
+        sleep(1);
+        STOPED =
+            (!is_alive(raw_args->player_1) || !is_alive(raw_args->player_2));
     }
     return;
 }
 
-void server_init(int *stoped)
+void server_init()
 {
     // launch socket
     int socket_fd = prepare_socket(G_IP, G_PORT);
-    printf("server created with %s %s socket is %d\n", G_IP, G_PORT, socket_fd);
-    int sockets[2] = { 0 };
+    printf("[server] created with %s %s socket is %d\n", G_IP, G_PORT,
+           socket_fd);
+    int sockets[2] = { 0, 0 };
 
     // waiting for 2 player
-    waiting_2_players(sockets, socket_fd, stoped);
+    waiting_2_players(sockets, socket_fd);
+
+    printf("[serv] sockets = [%d,%d]\n", sockets[0], sockets[1]);
+
+    if (STOPED)
+        return;
 
     printf("----------------------------------------------------------\n"
            "[serv] all players connected launching game\n"
            "----------------------------------------------------------\n");
+
     // preparing players data
     Dir p1;
     pthread_mutex_t m_dir_p1;
@@ -253,10 +312,11 @@ void server_init(int *stoped)
 
     // preparing listen thread arguments
     Server_listen_args *raw_args = malloc(sizeof(struct server_listen_args));
-    raw_args->stoped = stoped;
     raw_args->socket_fd = socket_fd;
+
     raw_args->player_1 = sockets[0];
     raw_args->player_2 = sockets[1];
+
     raw_args->dir_1 = &p1;
     raw_args->m_dir_1 = &m_dir_p1;
     raw_args->dir_2 = &p2;
@@ -274,12 +334,12 @@ void server_init(int *stoped)
 
     server_game_loop(raw_args);
 
-    //*stoped = 1;
+    STOPED = 1;
     pthread_join(listen_thread, NULL);
     free(raw_args);
 }
 
-void launch_multi(int *stoped, BoardContent *board_args)
+void launch_multi(BoardContent *board_args)
 {
     fflush(NULL);
     int pid = fork();
@@ -292,13 +352,13 @@ void launch_multi(int *stoped, BoardContent *board_args)
     case 0:
         // child
         prepare_logging(G_SERVER_LOGGING, 1); // STDOUT
-        server_init(stoped);
+        server_init();
         exit(0);
         break;
     default:
         // parent
-        prepare_logging(G_CLIENT_LOGGING, 2); // STDERR
-        client_init(board_args, stoped);
+        // prepare_logging(G_CLIENT_LOGGING, 2); // STDERR
+        client_init(board_args);
         break;
     }
     waitpid(pid, NULL, 0);

@@ -11,6 +11,8 @@ typedef enum GAME_STATE {
     STOP
 } GAME_STATE;
 
+extern int STOPED;
+
 /*----------------*\
 | Canvas variables |
 \*----------------*/

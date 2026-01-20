@@ -4,6 +4,7 @@
 #include <time.h>
 
 #include "Game/Player.h"
+#include "Keybinds.h"
 #include "Menu/MainMenu.h"
 #include "Multiplayer/network.h"
 
@@ -51,7 +52,7 @@ void *input_Handler(void *raw_args)
     ts.tv_nsec = 75000000;
 
     Inputs_args *arg = raw_args;
-    while (!*arg->stop)
+    while (!STOPED)
     {
         char input = ' ';
         scanf(" %c", &input);
@@ -73,7 +74,7 @@ void *input_Handler(void *raw_args)
         }
         if (input == QUIT_INPUT)
         {
-            *arg->stop = 1;
+            STOPED = 1;
         }
         else
         {
@@ -87,24 +88,24 @@ void *input_Handler(void *raw_args)
 |  Game relataed code |
 \*-------------------*/
 
-void apply_game_input(Player *player, char input, int *stoped)
+void apply_game_input(Player *player, char input)
 {
     for (int i = 0; i < NB_INPUTS; i++)
     {
         if (inputList[GAME][i].inputValue == input)
         {
-            inputList[GAME][i].function(stoped, player);
+            inputList[GAME][i].function(player);
         }
     }
 }
 
-void apply_client_input(int *server_fd, char input, int *stoped)
+void apply_client_input(int *server_fd, char input)
 {
     for (int i = 0; i < NB_INPUTS; i++)
     {
         if (inputList[GAME][i].inputValue == input)
         {
-            inputList[GAME][i].function(stoped, server_fd);
+            inputList[GAME][i].function(server_fd);
         }
     }
 }
@@ -113,42 +114,38 @@ void apply_client_input(int *server_fd, char input, int *stoped)
 |  Inputs functions   |
 \*-------------------*/
 
-void input_quit(int *stoped, void *args)
+void input_quit(void *args)
 {
     (void)args;
-    *stoped = 1;
+    STOPED = 1;
 }
 
-void input_move_left(int *stoped, void *args)
+void input_move_left(void *args)
 {
-    (void)stoped;
     Player *player = args;
     if (player->dir != LEFT && player->dir != RIGHT && !player->colision)
     {
         player->dir = LEFT;
     }
 }
-void input_move_right(int *stoped, void *args)
+void input_move_right(void *args)
 {
-    (void)stoped;
     Player *player = args;
     if (player->dir != LEFT && player->dir != RIGHT && !player->colision)
     {
         player->dir = RIGHT;
     }
 }
-void input_move_up(int *stoped, void *args)
+void input_move_up(void *args)
 {
-    (void)stoped;
     Player *player = args;
     if (player->dir != UP && player->dir != DOWN && !player->colision)
     {
         player->dir = UP;
     }
 }
-void input_move_down(int *stoped, void *args)
+void input_move_down(void *args)
 {
-    (void)stoped;
     Player *player = args;
     if (player->dir != UP && player->dir != DOWN && !player->colision)
     {
@@ -156,9 +153,8 @@ void input_move_down(int *stoped, void *args)
     }
 }
 
-void input_DEBUG(int *stoped, void *args)
+void input_DEBUG(void *args)
 {
-    (void)stoped;
     (void)args;
 }
 
@@ -166,7 +162,7 @@ void input_DEBUG(int *stoped, void *args)
 |  menu relataed code |
 \*-------------------*/
 
-void apply_menu_input(Menu_config *menuConf, char input, int *stoped)
+void apply_menu_input(Menu_config *menuConf, char input)
 {
     struct timespec temp_time;
     clock_gettime(CLOCK_REALTIME, &temp_time);
@@ -186,7 +182,7 @@ void apply_menu_input(Menu_config *menuConf, char input, int *stoped)
     {
         if (inputList[*menuConf->state][i].inputValue == input)
         {
-            inputList[*menuConf->state][i].function(stoped, menuConf);
+            inputList[*menuConf->state][i].function(menuConf);
             break;
         }
     }
@@ -196,26 +192,23 @@ void apply_menu_input(Menu_config *menuConf, char input, int *stoped)
 |  Menu Inputs functions   |
 \*------------------------*/
 
-void menu_input_down(int *stoped, void *args)
+void menu_input_down(void *args)
 {
-    (void)stoped;
     Menu_config *menuConf = args;
     menuConf->cursor_position =
         (menuConf->cursor_position + 1) % menuConf->cursor_max_value;
 }
 
-void menu_input_up(int *stoped, void *args)
+void menu_input_up(void *args)
 {
-    (void)stoped;
     Menu_config *menuConf = args;
     menuConf->cursor_position =
         (menuConf->cursor_max_value + menuConf->cursor_position - 1)
         % menuConf->cursor_max_value;
 }
 
-void menu_input_enter(int *stoped, void *args)
+void menu_input_enter(void *args)
 {
-    (void)stoped;
     Menu_config *menuConf = args;
     switch (menuConf->cursor_position)
     {
@@ -233,37 +226,34 @@ void menu_input_enter(int *stoped, void *args)
     }
 }
 
-void menu_input_return(int *stoped, void *args)
+void menu_input_return(void *args)
 {
     // return ?
     (void)args;
-    *stoped = 2;
+    STOPED = 2;
 }
 
 /*------------------------*\
 |  Multi Inputs functions  |
 \*------------------------*/
 
-void multi_input_up(int *stoped, void *args)
+void multi_input_up(void *args)
 {
-    (void)stoped;
     Menu_config *menuConf = args;
     menuConf->cursor_position =
         (menuConf->cursor_max_value + menuConf->cursor_position - 1)
         % menuConf->cursor_max_value;
 }
 
-void multi_input_down(int *stoped, void *args)
+void multi_input_down(void *args)
 {
-    (void)stoped;
     Menu_config *menuConf = args;
     menuConf->cursor_position =
         (menuConf->cursor_position + 1) % menuConf->cursor_max_value;
 }
 
-void multi_input_enter(int *stoped, void *args)
+void multi_input_enter(void *args)
 {
-    (void)stoped;
     Menu_config *menuConf = args;
     switch (menuConf->cursor_position)
     {
@@ -282,9 +272,8 @@ void multi_input_enter(int *stoped, void *args)
         break;
     }
 }
-void multi_input_return(int *stoped, void *args)
+void multi_input_return(void *args)
 {
-    (void)stoped;
     Menu_config *menuConf = args;
     *menuConf->state = MAIN_MENU;
 }

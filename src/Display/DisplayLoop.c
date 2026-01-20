@@ -8,7 +8,7 @@ void *updateDisplayLoop(void *raw_args)
     ts.tv_sec = 0;
     ts.tv_nsec = 1000000000 / FPS;
 
-    while (!*args->stoped)
+    while (!STOPED)
     {
         // lock buffer mutex
         pthread_mutex_lock(args->bufferMutex);
@@ -36,4 +36,3 @@ void *updateDisplayLoop(void *raw_args)
 
     return NULL;
 }
-

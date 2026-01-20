@@ -9,8 +9,7 @@
 #include "Utils/String.h"
 #include "globals.h"
 
-void menu_loop(String *buffer, GAME_STATE *state, Inputs_args *inputsArgs,
-               int *stoped)
+void menu_loop(String *buffer, GAME_STATE *state, Inputs_args *inputsArgs)
 {
     struct timespec ts;
     // 125ms
@@ -21,19 +20,19 @@ void menu_loop(String *buffer, GAME_STATE *state, Inputs_args *inputsArgs,
 
     Menu_config *menuConf = create_menu_config(state);
 
-    while ((*state == MAIN_MENU || *state == MULTI_MENU) && !*stoped)
+    while ((*state == MAIN_MENU || *state == MULTI_MENU) && !STOPED)
     {
         pthread_mutex_lock(inputsArgs->input_mutex);
-        apply_menu_input(menuConf, *inputsArgs->read_char, stoped);
+        apply_menu_input(menuConf, *inputsArgs->read_char);
         *inputsArgs->read_char = *inputsArgs->next_char;
         *inputsArgs->next_char = '\0';
         pthread_mutex_unlock(inputsArgs->input_mutex);
         clear_input(buffer);
-        display_menu_options(menuConf->cursor_position, buffer,
-                             (*state == MULTI_MENU));
+        if (*state == MULTI_MENU || *state == MAIN_MENU)
+            display_menu_options(menuConf->cursor_position, buffer,
+                                 (*state == MULTI_MENU));
 
         nanosleep(&ts, NULL);
     }
-
     free(menuConf);
 }

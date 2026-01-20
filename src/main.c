@@ -23,17 +23,16 @@ void reset_terminal(void)
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &old_termios);
     printf("\e[?25h"); // Affiche le curseur
     // move cursor uneder grid
-    clear_grid(HEIGHT_ID_TO_DISPLAY_ID(G_GRID_WIDTH));
-    printf("\e[0;0H");
-
+    // clear_grid(HEIGHT_ID_TO_DISPLAY_ID(G_GRID_WIDTH));
+    // printf("\e[0;0H");
     fflush(stdout);
 }
 
 void handle_sigint(int sig)
 {
     (void)sig;
+    STOPED = 1;
     reset_terminal();
-    exit(0);
 }
 
 int main(void)
@@ -51,7 +50,6 @@ int main(void)
     | variables definitions |
     \*---------------------*/
 
-    int stoped = 0;
     char read_char = '\0';
     char next_char = '\0';
     pthread_mutex_t input_mutex;
@@ -97,7 +95,6 @@ int main(void)
     // input thread preparation
     // TODO RENAME THIS STRUCT
     Inputs_args *raw_args_input = malloc(sizeof(Inputs_args));
-    raw_args_input->stop = &stoped;
     raw_args_input->read_char = &read_char;
     raw_args_input->next_char = &next_char;
     raw_args_input->input_mutex = &input_mutex;
@@ -112,7 +109,6 @@ int main(void)
     BoardContent *raw_args_board = malloc(sizeof(BoardContent));
     raw_args_board->width = G_GRID_WIDTH;
     raw_args_board->height = G_GRID_HEIGHT;
-    raw_args_board->stoped = &stoped;
     raw_args_board->bufferMutex = &dispaly_mutex;
     raw_args_board->buffer = buffer;
     raw_args_board->grid = create_grid(G_GRID_WIDTH, G_GRID_HEIGHT);
@@ -126,27 +122,28 @@ int main(void)
 
     GAME_STATE state = MAIN_MENU;
 
-    while (!stoped)
+    while (!STOPED)
     {
         switch (state)
         {
         case MULTI_MENU:
         case MAIN_MENU:
-            menu_loop(buffer, &state, raw_args_input, &stoped);
+            menu_loop(buffer, &state, raw_args_input);
             break;
         case GAME:
-            start_game(raw_args_board, raw_args_input, &stoped);
+            start_game(raw_args_board, raw_args_input);
             break;
         case SERVER:
-            launch_multi(&stoped, raw_args_board);
-            state = STOP;
+            launch_multi(raw_args_board);
+            state = STOPED;
             break;
         case CLIENT:
-            prepare_logging(G_SERVER_LOGGING, 1);
-            client_init(raw_args_board, &stoped);
+            prepare_logging(G_CLIENT_LOGGING, 2);
+            client_init(raw_args_board);
+            state = STOPED;
             break;
         case STOP:
-            stoped = 1;
+            STOPED = 1;
             break;
         }
     }
@@ -161,5 +158,6 @@ int main(void)
 
     free(raw_args_input);
     fflush(stdout);
+    reset_terminal();
     return 0;
 }
