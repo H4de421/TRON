@@ -11,8 +11,9 @@ void clear_grid(int height)
 {
     for (int i = 0; i < height; i++)
     {
-        printf("\e[%d;0H\e[K", i);
+        printf("\e[%d;%dH\e[K", i + (G_SHIFT_HEIGHT + 1), G_SHIFT_WIDTH + 1);
     }
+    fflush(stdout);
 }
 
 int adjust_grid_size(int *width, int *height)
@@ -160,5 +161,4 @@ void draw_basic_grid(String *buffer, int width, int height)
             addToString(buffer, "\n", 1);
         }
     }
-    // printf("%s", NO_COLOR);
 }

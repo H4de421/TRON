@@ -31,8 +31,11 @@ void reset_terminal(void)
 void handle_sigint(int sig)
 {
     (void)sig;
-    STOPED = 1;
-    reset_terminal();
+    if (G_IS_MULTI)
+        MULTI_STOPED = 1;
+    else
+        STOPED = 1;
+    // reset_terminal();
 }
 
 int main(void)
@@ -46,6 +49,15 @@ int main(void)
     {
         return 2;
     }
+
+    /*---------------------*\
+    | log redirection       |
+    \*---------------------*/
+
+    char *str_pid = my_itoa(getpid());
+    prepare_logging(G_CLIENT_LOGGING, 2, str_pid); // STDERR
+    free(str_pid);
+
     /*---------------------*\
     | variables definitions |
     \*---------------------*/
@@ -128,19 +140,28 @@ int main(void)
         {
         case MULTI_MENU:
         case MAIN_MENU:
+            fprintf(stderr, "[client] -> launching main menu\n");
+
             menu_loop(buffer, &state, raw_args_input);
             break;
         case GAME:
             start_game(raw_args_board, raw_args_input);
             break;
         case SERVER:
+            G_IS_MULTI = 1;
             launch_multi(raw_args_board);
-            state = STOPED;
+            state = MAIN_MENU;
+            G_IS_MULTI = 0;
+            fprintf(stderr, "[client] -> exiting client state\n");
             break;
         case CLIENT:
-            prepare_logging(G_CLIENT_LOGGING, 2);
+            G_IS_MULTI = 1;
+            G_IS_CLIENT = 1;
+            prepare_logging(G_CLIENT_LOGGING, 2, "0");
             client_init(raw_args_board);
-            state = STOPED;
+            state = MAIN_MENU;
+            G_IS_CLIENT = 0;
+            G_IS_MULTI = 0;
             break;
         case STOP:
             STOPED = 1;
@@ -152,8 +173,15 @@ int main(void)
     | end Game section     |
     \*--------------------*/
 
+    fprintf(stderr,
+            "\n===================="
+            "\n[client nb % d]->closing threads "
+            "\n====================\n",
+            G_PLAYER_ID);
     pthread_join(display_thread, NULL);
+    fprintf(stderr, "display \n");
     pthread_join(input_thread, NULL);
+    fprintf(stderr, "input \n");
     destroy_board(raw_args_board);
 
     free(raw_args_input);

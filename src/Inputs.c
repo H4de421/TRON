@@ -2,6 +2,7 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "Game/Player.h"
 #include "Keybinds.h"
@@ -58,6 +59,7 @@ void *input_Handler(void *raw_args)
         scanf(" %c", &input);
         if (input >= 'a' && input <= 'z')
         {
+            fprintf(stderr, "[debug] got input \n");
             if (G_IS_CLIENT)
             {
                 send_message(IN, G_SERVER_FD, "%d\n", input);
@@ -81,6 +83,7 @@ void *input_Handler(void *raw_args)
             nanosleep(&ts, NULL);
         }
     }
+    fprintf(stderr, "client INPUT thread quit\n");
     return NULL;
 }
 
@@ -117,7 +120,14 @@ void apply_client_input(int *server_fd, char input)
 void input_quit(void *args)
 {
     (void)args;
-    STOPED = 1;
+    if (G_IS_MULTI)
+    {
+        MULTI_STOPED = 1;
+    }
+    else
+    {
+        STOPED = 1;
+    }
 }
 
 void input_move_left(void *args)

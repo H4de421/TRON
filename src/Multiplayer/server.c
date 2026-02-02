@@ -19,11 +19,9 @@
 #include <unistd.h>
 
 #include "Display/Board.h"
-#include "Game/Player.h"
 #include "Multiplayer/client.h"
 #include "Multiplayer/network.h"
 #include "Utils/String.h"
-#include "Utils/pretty_printer.h"
 #include "globals.h"
 
 #define EPOLL_QUEUE_LEN 2
@@ -47,7 +45,7 @@ static void server_process_message(char buffer[4096],
             || WIDTH_ID_TO_DISPLAY_ID(content->nb_col) < MIN_GRID_WIDTH)
         {
             printf("[serv] reciened a wrong size shutting down the server");
-            STOPED = 1;
+            MULTI_STOPED = 1;
         }
         if (player == 1)
         {
@@ -68,7 +66,7 @@ static void server_process_message(char buffer[4096],
             *raw_args->dir_1 = content->dir;
         else
             *raw_args->dir_2 = content->dir;
-        printf("-- player %d moved to the %d", player, content->dir);
+        printf("-- player %d moved to the %d\n", player, content->dir);
         free(content);
         break;
     }
@@ -98,7 +96,7 @@ void *server_listen(void *raw_args)
         close(player_1);
         close(player_2);
         close(socket_fd);
-        STOPED = 1;
+        MULTI_STOPED = 1;
         printf("[serv] error while adding p1 to epoll\n");
         return NULL;
     }
@@ -111,7 +109,7 @@ void *server_listen(void *raw_args)
         close(player_1);
         close(player_2);
         close(socket_fd);
-        STOPED = 1;
+        MULTI_STOPED = 1;
         printf("[serv] error while adding p2 to epoll\n");
         return NULL;
     }
@@ -119,12 +117,12 @@ void *server_listen(void *raw_args)
     static struct epoll_event events[6];
 
     // listen loop
-    while (!STOPED)
+    while (!MULTI_STOPED)
     {
         int nfds = epoll_wait(epfd, events, MAX_EPOLL_EVENTS_PER_RUN, 0);
         if (nfds < 0)
         {
-            STOPED = 1;
+            MULTI_STOPED = 1;
             printf("[serv] Error in epoll_wait!\n");
         }
 
@@ -136,7 +134,7 @@ void *server_listen(void *raw_args)
             {
                 epoll_ctl(epfd, EPOLL_CTL_DEL, fd, &events[i]);
                 printf("[serv] lost p%d\n", i + 1);
-                STOPED = 1;
+                MULTI_STOPED = 1;
             }
             if (events[i].events & EPOLLIN)
             {
@@ -151,7 +149,7 @@ void *server_listen(void *raw_args)
                                            1 + (fd == player_2));
                 }
                 // else
-                //     STOPED = 1;
+                //     MULTI_STOPED = 1;
                 free(buffer);
             }
         }
@@ -166,11 +164,11 @@ void *server_listen(void *raw_args)
 static void waiting_2_players(int sockets[2], int socket_fd)
 {
     // wait for 2 players to connect
-    while (!STOPED)
+    while (!MULTI_STOPED)
     {
         int nb_connected_players = 0;
 
-        while (nb_connected_players != 2 && !STOPED)
+        while (nb_connected_players != 2 && !MULTI_STOPED)
         {
             int socket_p = accept4(socket_fd, NULL, NULL, SOCK_NONBLOCK);
             if (socket_p == -1)
@@ -186,7 +184,7 @@ static void waiting_2_players(int sockets[2], int socket_fd)
                 else
                 {
                     printf("[serv] error when accepting connections\n");
-                    STOPED = 1;
+                    MULTI_STOPED = 1;
                 }
             }
 
@@ -273,19 +271,19 @@ static void server_game_loop(struct server_listen_args *raw_args)
     prepare_game(raw_args);
     // run main loop
     printf("preparation ended\n");
-    while (!STOPED)
+    while (!MULTI_STOPED)
     {
         sleep(1);
-        STOPED =
+        MULTI_STOPED =
             (!is_alive(raw_args->player_1) || !is_alive(raw_args->player_2));
     }
     return;
 }
 
-void server_init()
+void server_init(char *ip, char *port)
 {
     // launch socket
-    int socket_fd = prepare_socket(G_IP, G_PORT);
+    int socket_fd = prepare_socket(ip, port);
     printf("[server] created with %s %s socket is %d\n", G_IP, G_PORT,
            socket_fd);
     int sockets[2] = { 0, 0 };
@@ -295,7 +293,7 @@ void server_init()
 
     printf("[serv] sockets = [%d,%d]\n", sockets[0], sockets[1]);
 
-    if (STOPED)
+    if (MULTI_STOPED)
         return;
 
     printf("----------------------------------------------------------\n"
@@ -329,13 +327,12 @@ void server_init()
     // init game
 
     // launch listening thread.
-    pthread_t listen_thread;
-    pthread_create(&listen_thread, NULL, server_listen, raw_args);
+    pthread_t server_listen_thread;
+    pthread_create(&server_listen_thread, NULL, server_listen, raw_args);
 
     server_game_loop(raw_args);
 
-    STOPED = 1;
-    pthread_join(listen_thread, NULL);
+    pthread_join(server_listen_thread, NULL);
     free(raw_args);
 }
 
@@ -344,6 +341,8 @@ void launch_multi(BoardContent *board_args)
     fflush(NULL);
     int pid = fork();
 
+    fprintf(stderr, "[LAUNCHING SERVER]\n");
+
     switch (pid)
     {
     case -1:
@@ -351,16 +350,16 @@ void launch_multi(BoardContent *board_args)
         break;
     case 0:
         // child
-        prepare_logging(G_SERVER_LOGGING, 1); // STDOUT
-        server_init();
-        exit(0);
+        prepare_logging(G_SERVER_LOGGING, 1, "0"); // STDOUT
+        char *args[] = { "Tron_Server", G_IP, G_PORT, NULL };
+        execv("./.tron_server", args);
         break;
     default:
         // parent
-        // prepare_logging(G_CLIENT_LOGGING, 2); // STDERR
         client_init(board_args);
         break;
     }
+    G_IS_CLIENT = 0;
     waitpid(pid, NULL, 0);
-    printf("server exited normaly");
+    fprintf(stderr, "[client] server exited normaly\n");
 }

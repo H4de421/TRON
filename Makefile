@@ -13,7 +13,10 @@ TESTO=$(TEST:.c=.o)
 
 .PHONY: check
 
-all: main
+all: server main
+
+server: $(OBJS) src/server_main.o
+	$(CC) $(LDFLAGS) -o .tron_server $^ 
 
 main: $(OBJS) src/main.o
 	$(CC) $(LDFLAGS) -o tron $^
@@ -22,8 +25,7 @@ main: $(OBJS) src/main.o
 #	$(CC) $(LDFLAGS) -o test $^
 
 clear_logs:
-	${RM} logs/Server.log
-	${RM} logs/Client.log
+	${RM} logs/*
 
 clean:
-	${RM} ${OBJS} src/main.o src/client_main.o tron tron_c
+	${RM} ${OBJS} src/main.o src/client_main.o tron .tron_server

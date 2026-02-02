@@ -19,6 +19,6 @@ typedef struct server_listen_args {
 
 
 void *server_listen(void *raw_args);
-void server_init(void);
+void server_init(char *ip, char *port);
 void launch_multi(BoardContent *board_args);
 

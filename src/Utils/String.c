@@ -50,3 +50,26 @@ void addToString(struct string *str, char *content, int size)
     }
     pthread_mutex_unlock(str->dispaly_mutex);
 }
+
+char *my_itoa(int nb)
+{
+    if (nb == 0)
+    {
+        return "0";
+    }
+    char tmp[2048];
+    char *res = calloc(2048, 1);
+    int i = 0;
+    while (nb > 0)
+    {
+        int value = nb % 10;
+        tmp[i] = '0' + value;
+        i++;
+        nb /= 10;
+    }
+    for (int j = i - 1; j >= 0; j--)
+    {
+        res[(i - 1) - j] = tmp[j];
+    }
+    return res;
+}

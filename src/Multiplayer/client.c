@@ -8,6 +8,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <time.h>
+#include <unistd.h>
 
 #include "Display/Board.h"
 #include "Display/Colors.h"
@@ -130,7 +131,7 @@ static void handle_message(char *buffer, int size_msg, Player **p1, Player **p2,
         (*p1)->dir = tick->p1_d;
         (*p2)->old_dir = (*p2)->dir;
         (*p2)->dir = tick->p2_d;
-        STOPED = move_player(*p1, args_board->buffer, args_board->grid)
+        MULTI_STOPED = move_player(*p1, args_board->buffer, args_board->grid)
             && move_player(*p2, args_board->buffer, args_board->grid);
         free(tick);
         break;
@@ -154,7 +155,7 @@ void client_loop(int server_fd, BoardContent *args_board)
     Player *p2 = NULL;
     // draw players
 
-    while (!STOPED)
+    while (!MULTI_STOPED)
     {
         int size = 64;
         char *buffer = malloc(size * sizeof(char));
@@ -169,12 +170,11 @@ void client_loop(int server_fd, BoardContent *args_board)
         // connection lost
         if (size_msg == -1)
         {
-            fprintf(stderr, "server lost\n");
-            STOPED = 1;
+            MULTI_STOPED = 1;
         }
         nanosleep(&ts, NULL);
     }
-    fprintf(stderr, "client EXITED");
+    fprintf(stderr, "client EXITED : %d %d\n", MULTI_STOPED, STOPED);
     destroy_player(p1);
     destroy_player(p2);
 }
@@ -190,7 +190,7 @@ void client_init(BoardContent *args_board)
     // server connection
     fprintf(stderr, "[client] waiting for server to respond\n");
     int server_fd = prepare_socket_client(G_IP, G_PORT);
-    int nb_try = 20;
+    int nb_try = 50;
     while (nb_try && server_fd == -1)
     {
         server_fd = prepare_socket_client(G_IP, G_PORT);
@@ -201,14 +201,18 @@ void client_init(BoardContent *args_board)
     if (nb_try == 0)
     {
         fprintf(stderr, "[client] error, can't connected to server");
-        STOPED = 1;
+        MULTI_STOPED = 1;
     }
 
-    G_IS_CLIENT = 1;
     G_SERVER_FD = server_fd;
 
     fprintf(stderr, "[client] connected with socket %d\n", server_fd);
     // main loop
     client_loop(server_fd, args_board);
-    clear_grid(HEIGHT_ID_TO_DISPLAY_ID(G_GRID_WIDTH));
+
+    // close connection with server
+    close(server_fd);
+    // clear grid
+    clear_grid(HEIGHT_ID_TO_DISPLAY_ID(G_GRID_HEIGHT));
+    draw_borders(G_CANVAS_WIDTH, G_CANVAS_HEIGHT);
 }

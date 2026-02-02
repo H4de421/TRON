@@ -19,4 +19,5 @@ void doubleCapacity(struct string *str);
 
 void addToString(struct string*str, char *content, int size);
 
+char *my_itoa(int nb);
 

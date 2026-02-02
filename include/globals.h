@@ -39,6 +39,8 @@ extern int G_SHIFT_HEIGHT;
 \*----------------*/
 extern char G_IP[20];
 extern char G_PORT[5];
+extern char G_IS_MULTI;
+extern char MULTI_STOPED;
 extern char G_IS_CLIENT;
 extern char G_SERVER_FD;
 extern int G_SOCKET;

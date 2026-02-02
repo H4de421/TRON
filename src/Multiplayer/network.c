@@ -267,19 +267,22 @@ int send_data(char *buffer, int socket, int size)
     return sended;
 }
 
-void prepare_logging(char *name, int fd)
+void prepare_logging(char *name, int fd, char *str_PID)
 {
-    int file =
-        open(name, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+    char filename[2048];
+    strcat(filename, name);
+    strcat(filename, str_PID);
+    int file = open(filename, O_CREAT | O_WRONLY,
+                    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
     if (!file)
     {
-        fprintf(stderr, "[serv] can't open file");
+        fprintf(stderr, "can't open file");
         return;
     }
     int res = dup2(file, fd);
     if (res == -1)
     {
-        fprintf(stderr, "[serv] can't dup2");
+        fprintf(stderr, "can't dup2");
         return;
     }
 }

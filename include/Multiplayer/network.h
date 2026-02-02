@@ -62,5 +62,5 @@ int prepare_socket(const char *ip, const char *port);
 
 int accept_client(int socket);
 
-void prepare_logging(char *name, int fd);
+void prepare_logging(char *name, int fd, char *str_PID);
 
