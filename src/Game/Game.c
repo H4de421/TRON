@@ -14,7 +14,7 @@ void start_game(BoardContent *raw_args_board, Inputs_args *raw_args_input)
     int player_x = G_GRID_WIDTH / 8 + 1;
     int player_y = G_GRID_HEIGHT / 2 + 1;
     Player *player = create_player(player_x, player_y, PLAYER_COLOR);
-    draw_player(player, buffer, raw_args_board->grid);
+    draw_player(player, buffer);
 
     struct timespec ts;
     // 125ms
@@ -23,7 +23,7 @@ void start_game(BoardContent *raw_args_board, Inputs_args *raw_args_input)
 
     // main loop
     int err = 0;
-    while (!err && !STOPED)
+    while (!err && !STOPPED)
     {
         err = move_player(player, buffer, raw_args_board->grid);
         // input managment
@@ -38,6 +38,6 @@ void start_game(BoardContent *raw_args_board, Inputs_args *raw_args_input)
     if (err)
         draw_colision_anim(player, buffer, raw_args_input->input_mutex, 2);
 
-    STOPED = 2;
+    STOPPED = 2;
     destroy_player(player);
 }

@@ -162,3 +162,15 @@ void draw_basic_grid(String *buffer, int width, int height)
         }
     }
 }
+
+void debug_grid(char *grid)
+{
+    for (int j = 0; j < G_GRID_HEIGHT; j++)
+    {
+        for (int i = 0; i < G_GRID_WIDTH; i++)
+        {
+            fprintf(stderr, " %d", grid[GRID_COORDINATE(i, j)]);
+        }
+        fprintf(stderr, "\n");
+    }
+}

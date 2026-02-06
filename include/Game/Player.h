@@ -30,9 +30,10 @@ Player *create_player(int x, int y, char str[]);
 
 void destroy_player(Player *player);
 
+int change_position(Player *Player);
 int move_player(Player *player, String *buffer, char *grid);
 
-void draw_player(Player *player, String *buffer, char *grid);
+void draw_player(Player *player, String *buffer);
 
 void draw_trail(Player *player, String *buffer);
 

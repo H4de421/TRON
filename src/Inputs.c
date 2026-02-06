@@ -53,7 +53,7 @@ void *input_Handler(void *raw_args)
     ts.tv_nsec = 75000000;
 
     Inputs_args *arg = raw_args;
-    while (!STOPED)
+    while (!STOPPED)
     {
         char input = ' ';
         scanf(" %c", &input);
@@ -76,7 +76,7 @@ void *input_Handler(void *raw_args)
         }
         if (input == QUIT_INPUT)
         {
-            STOPED = 1;
+            STOPPED = 1;
         }
         else
         {
@@ -122,11 +122,11 @@ void input_quit(void *args)
     (void)args;
     if (G_IS_MULTI)
     {
-        MULTI_STOPED = 1;
+        MULTI_STOPPED = 1;
     }
     else
     {
-        STOPED = 1;
+        STOPPED = 1;
     }
 }
 
@@ -240,7 +240,7 @@ void menu_input_return(void *args)
 {
     // return ?
     (void)args;
-    STOPED = 2;
+    STOPPED = 2;
 }
 
 /*------------------------*\

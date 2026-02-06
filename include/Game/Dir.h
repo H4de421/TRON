@@ -11,4 +11,6 @@ typedef enum Dir {
 struct Dir_links {
     Dir dir;
     char *string;
+    char input;
 };
+

@@ -6,7 +6,8 @@
 /*----------------*\
 | Global Var       |
 \*----------------*/
-int STOPED = 0;
+char STOPPED = 0;
+char MULTI_STOPPED = 0;
 
 /*----------------*\
 | Canvas variables |
@@ -34,7 +35,6 @@ int G_SHIFT_HEIGHT = 3;
 char G_IP[20] = "localhost";
 char G_PORT[5] = "4214";
 char G_IS_MULTI = 0;
-char MULTI_STOPED = 0;
 char G_IS_CLIENT = 0;
 char G_SERVER_FD = 0;
 char G_SERVER_LOGGING[20] = "logs/Server.log";

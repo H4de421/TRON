@@ -1,4 +1,6 @@
 #include <time.h>
+
+#include "Game/Dir.h"
 #define _GNU_SOURCE
 #include <err.h>
 #include <fcntl.h>
@@ -18,6 +20,10 @@
 #define NB_METHOD 6
 #define MESSAGE_MAX_SIZE 4096
 
+static struct Dir_links dir_links[4] = { { UP, "UP", 'z' },
+                                         { DOWN, "DOWN", 's' },
+                                         { LEFT, "LEFT", 'q' },
+                                         { RIGHT, "RIGHT", 'd' } };
 struct method_e_str
 {
     char *str;
@@ -81,9 +87,7 @@ void send_message(enum message_type method, int fd, char *format, ...)
     }
     final_message[size++] = '\n';
     fflush(stdout);
-    printf("sending to %u : [%s]", fd, final_message);
-    int res = send_data(final_message, fd, size);
-    printf("send returned %d\n", res);
+    send_data(final_message, fd, size);
 }
 
 init_enum *parse_INIT(char *content)
@@ -118,7 +122,14 @@ in_enum *parse_IN(char *content)
         return res;
     char *savestr = NULL;
     char *dir = strtok_r(content, ";", &savestr);
-    res->dir = atoi(dir);
+    int input = atoi(dir);
+    for (int i = 0; i < 4; i++)
+    {
+        if (dir_links[i].input == input)
+        {
+            res->dir = dir_links[i].dir;
+        }
+    }
     return res;
 }
 
@@ -141,6 +152,7 @@ tick_enum *parse_TICK(char *content)
     char *savestr;
     char *p1_d = strtok_r(content, ";", &savestr);
     char *p2_d = strtok_r(NULL, ";", &savestr);
+    fprintf(stderr, "decoded : [%s] [%s]", p1_d, p2_d);
     res->p1_d = atoi(p1_d);
     res->p2_d = atoi(p2_d);
     return res;

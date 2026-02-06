@@ -19,6 +19,9 @@
 #include <unistd.h>
 
 #include "Display/Board.h"
+#include "Game/Dir.h"
+#include "Game/Player.h"
+#include "Inputs.h"
 #include "Multiplayer/client.h"
 #include "Multiplayer/network.h"
 #include "Utils/String.h"
@@ -45,7 +48,7 @@ static void server_process_message(char buffer[4096],
             || WIDTH_ID_TO_DISPLAY_ID(content->nb_col) < MIN_GRID_WIDTH)
         {
             printf("[serv] reciened a wrong size shutting down the server");
-            MULTI_STOPED = 1;
+            MULTI_STOPPED = 1;
         }
         if (player == 1)
         {
@@ -62,10 +65,19 @@ static void server_process_message(char buffer[4096],
     }
     case IN: {
         in_enum *content = parse_IN(strsave);
+        printf("[server] input %d from %d", content->dir, player);
         if (player)
+        {
+            pthread_mutex_lock(&raw_args->m_dir_1);
             *raw_args->dir_1 = content->dir;
+            pthread_mutex_unlock(&raw_args->m_dir_1);
+        }
         else
+        {
+            pthread_mutex_lock(&raw_args->m_dir_2);
             *raw_args->dir_2 = content->dir;
+            pthread_mutex_unlock(&raw_args->m_dir_2);
+        }
         printf("-- player %d moved to the %d\n", player, content->dir);
         free(content);
         break;
@@ -96,7 +108,7 @@ void *server_listen(void *raw_args)
         close(player_1);
         close(player_2);
         close(socket_fd);
-        MULTI_STOPED = 1;
+        MULTI_STOPPED = 1;
         printf("[serv] error while adding p1 to epoll\n");
         return NULL;
     }
@@ -109,7 +121,7 @@ void *server_listen(void *raw_args)
         close(player_1);
         close(player_2);
         close(socket_fd);
-        MULTI_STOPED = 1;
+        MULTI_STOPPED = 1;
         printf("[serv] error while adding p2 to epoll\n");
         return NULL;
     }
@@ -117,12 +129,12 @@ void *server_listen(void *raw_args)
     static struct epoll_event events[6];
 
     // listen loop
-    while (!MULTI_STOPED)
+    while (!MULTI_STOPPED)
     {
         int nfds = epoll_wait(epfd, events, MAX_EPOLL_EVENTS_PER_RUN, 0);
         if (nfds < 0)
         {
-            MULTI_STOPED = 1;
+            MULTI_STOPPED = 1;
             printf("[serv] Error in epoll_wait!\n");
         }
 
@@ -134,7 +146,7 @@ void *server_listen(void *raw_args)
             {
                 epoll_ctl(epfd, EPOLL_CTL_DEL, fd, &events[i]);
                 printf("[serv] lost p%d\n", i + 1);
-                MULTI_STOPED = 1;
+                MULTI_STOPPED = 1;
             }
             if (events[i].events & EPOLLIN)
             {
@@ -149,7 +161,7 @@ void *server_listen(void *raw_args)
                                            1 + (fd == player_2));
                 }
                 // else
-                //     MULTI_STOPED = 1;
+                //     MULTI_STOPPED = 1;
                 free(buffer);
             }
         }
@@ -164,11 +176,11 @@ void *server_listen(void *raw_args)
 static void waiting_2_players(int sockets[2], int socket_fd)
 {
     // wait for 2 players to connect
-    while (!MULTI_STOPED)
+    while (!MULTI_STOPPED)
     {
         int nb_connected_players = 0;
 
-        while (nb_connected_players != 2 && !MULTI_STOPED)
+        while (nb_connected_players != 2 && !MULTI_STOPPED)
         {
             int socket_p = accept4(socket_fd, NULL, NULL, SOCK_NONBLOCK);
             if (socket_p == -1)
@@ -184,7 +196,7 @@ static void waiting_2_players(int sockets[2], int socket_fd)
                 else
                 {
                     printf("[serv] error when accepting connections\n");
-                    MULTI_STOPED = 1;
+                    MULTI_STOPPED = 1;
                 }
             }
 
@@ -245,11 +257,20 @@ static void prepare_game(struct server_listen_args *raw_args)
     int final_col = MIN(raw_args->map_col_p1, raw_args->map_col_p2);
     int final_lin = MIN(raw_args->map_lin_p1, raw_args->map_lin_p2);
 
+    G_GRID_WIDTH = final_col;
+    G_GRID_HEIGHT = final_lin;
+
     // compute playes positions
     int p1_x = 1;
     int p1_y = final_lin - 2;
     int p2_x = final_col - 2;
     int p2_y = 1;
+
+    // update local informations
+    raw_args->map_col_p1 = p1_x;
+    raw_args->map_lin_p1 = p1_y;
+    raw_args->map_col_p2 = p2_x;
+    raw_args->map_lin_p2 = p2_y;
 
     // send final size + all informations
     send_message(INIT, raw_args->player_1, "1;%d;%d;%d;%d;%d;%d;", final_col,
@@ -257,24 +278,90 @@ static void prepare_game(struct server_listen_args *raw_args)
     send_message(INIT, raw_args->player_2, "2;%d;%d;%d;%d;%d;%d;", final_col,
                  final_lin, p1_x, p1_y, p2_x, p2_y);
 
-    ts.tv_nsec = 200000000;
-
     // start
     send_message(START, raw_args->player_1, "");
     send_message(START, raw_args->player_2, "");
 }
 
+static void server_move_player(int *col, int *lin, Dir dir,
+                               pthread_mutex_t mutex)
+{
+    pthread_mutex_lock(&mutex);
+    *col += (dir == RIGHT ? 1 : (dir == LEFT ? -1 : 0));
+    *lin += (dir == DOWN ? 1 : (dir == UP ? -1 : 0));
+    pthread_mutex_unlock(&mutex);
+}
+
+// check for collisions
+// return codes :
+// 0 -> no collisions
+// 1 -> p1 collision
+// 2 -> p2 collision
+// 3 -> both
+static int check_collisions(int col_1, int col_2, int lin_1, int lin_2)
+{
+    int res = 0;
+    if (col_1 < 0 || col_1 >= G_GRID_WIDTH || lin_1 < 0
+        || lin_1 >= G_GRID_HEIGHT)
+    {
+        res += 1;
+    }
+    if (col_2 < 0 || col_2 >= G_GRID_WIDTH || lin_2 < 0
+        || lin_2 >= G_GRID_HEIGHT)
+    {
+        res += 2;
+    }
+    return res;
+}
+
 static void server_game_loop(struct server_listen_args *raw_args)
 {
     // TODO impement server_logic
+
+    struct timespec ts;
+    // 125ms
+    ts.tv_sec = 0;
+    ts.tv_nsec = 250000000;
+
     // prepare_game
     prepare_game(raw_args);
     // run main loop
     printf("preparation ended\n");
-    while (!MULTI_STOPED)
+    while (!MULTI_STOPPED)
     {
-        sleep(1);
-        MULTI_STOPED =
+        // move p1,
+        server_move_player(&raw_args->map_col_p1, &raw_args->map_lin_p1,
+                           *raw_args->dir_1, raw_args->m_dir_1);
+        // move p2,
+        server_move_player(&raw_args->map_col_p2, &raw_args->map_lin_p2,
+                           *raw_args->dir_2, raw_args->m_dir_2);
+        // check for collisions
+        int collisions =
+            check_collisions(raw_args->map_col_p1, raw_args->map_col_p2,
+                             raw_args->map_lin_p1, raw_args->map_lin_p2);
+        if (collisions != 0)
+        {
+            printf("[server] => collisions %d\n", collisions);
+            printf("[server] => %d,%d and %d,%d\n", raw_args->map_col_p1,
+                   raw_args->map_lin_p1, raw_args->map_col_p2,
+                   raw_args->map_lin_p2);
+
+            MULTI_STOPPED = 1;
+        }
+        // send new informations
+        pthread_mutex_lock(&raw_args->m_dir_1);
+        pthread_mutex_lock(&raw_args->m_dir_2);
+        send_message(TICK, raw_args->player_1, "%d;%d;", *raw_args->dir_1,
+                     *raw_args->dir_2);
+        send_message(TICK, raw_args->player_2, "%d;%d;", *raw_args->dir_1,
+                     *raw_args->dir_2);
+        pthread_mutex_unlock(&raw_args->m_dir_1);
+        pthread_mutex_unlock(&raw_args->m_dir_2);
+
+        // sleep
+        nanosleep(&ts, NULL);
+        // alivness check
+        MULTI_STOPPED =
             (!is_alive(raw_args->player_1) || !is_alive(raw_args->player_2));
     }
     return;
@@ -293,7 +380,7 @@ void server_init(char *ip, char *port)
 
     printf("[serv] sockets = [%d,%d]\n", sockets[0], sockets[1]);
 
-    if (MULTI_STOPED)
+    if (MULTI_STOPPED)
         return;
 
     printf("----------------------------------------------------------\n"
@@ -301,10 +388,10 @@ void server_init(char *ip, char *port)
            "----------------------------------------------------------\n");
 
     // preparing players data
-    Dir p1;
+    Dir p1 = RIGHT;
     pthread_mutex_t m_dir_p1;
     pthread_mutex_init(&m_dir_p1, NULL);
-    Dir p2;
+    Dir p2 = LEFT;
     pthread_mutex_t m_dir_p2;
     pthread_mutex_init(&m_dir_p2, NULL);
 
@@ -316,9 +403,9 @@ void server_init(char *ip, char *port)
     raw_args->player_2 = sockets[1];
 
     raw_args->dir_1 = &p1;
-    raw_args->m_dir_1 = &m_dir_p1;
+    raw_args->m_dir_1 = m_dir_p1;
     raw_args->dir_2 = &p2;
-    raw_args->m_dir_1 = &m_dir_p1;
+    raw_args->m_dir_1 = m_dir_p1;
     raw_args->map_col_p1 = -1;
     raw_args->map_lin_p1 = -1;
     raw_args->map_col_p2 = -1;

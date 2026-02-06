@@ -12,6 +12,7 @@
 
 #include "Display/Board.h"
 #include "Display/Colors.h"
+#include "Game/Dir.h"
 #include "Game/Player.h"
 #include "Multiplayer/network.h"
 #include "Utils/pretty_printer.h"
@@ -106,18 +107,17 @@ static void handle_message(char *buffer, int size_msg, Player **p1, Player **p2,
                             (init->player_id == 2 ? PLAYER_COLOR : AI_COLOR));
         // draw map + players
 
+        free(args_board->grid);
+        args_board->grid = create_grid(G_GRID_HEIGHT, G_GRID_HEIGHT);
         draw_basic_grid(args_board->buffer, G_GRID_WIDTH, G_GRID_HEIGHT);
-        draw_player(*p1, args_board->buffer, args_board->grid);
-        draw_player(*p2, args_board->buffer, args_board->grid);
+        draw_player(*p1, args_board->buffer);
+        draw_player(*p2, args_board->buffer);
         free(init);
         break;
     }
     case SIZE: {
         // compute max map size
         fprintf(stderr, "[client] recived size\n");
-        // int width;
-        // int height;
-        // adjust_grid_size(&width, &height);
         fprintf(stderr, "[client] computed size = %d, %d\n\n\n", G_GRID_WIDTH,
                 G_GRID_HEIGHT);
         send_message(SIZE, G_SERVER_FD, "%d;%d", G_GRID_WIDTH, G_GRID_HEIGHT);
@@ -125,18 +125,22 @@ static void handle_message(char *buffer, int size_msg, Player **p1, Player **p2,
     }
     case TICK: {
         // update map of players
-        fprintf(stderr, "[client] recived TICK\n");
         tick_enum *tick = parse_TICK(strsave);
+        fprintf(stderr, "[client] recived TICK dir p1 = %d, dir p2 = %d\n",
+                tick->p1_d, tick->p2_d);
         (*p1)->old_dir = (*p1)->dir;
         (*p1)->dir = tick->p1_d;
         (*p2)->old_dir = (*p2)->dir;
         (*p2)->dir = tick->p2_d;
-        MULTI_STOPED = move_player(*p1, args_board->buffer, args_board->grid)
-            && move_player(*p2, args_board->buffer, args_board->grid);
+        fprintf(stderr, "pos before %d %d\n", (*p1)->grid_x, (*p1)->grid_y);
+        // TODO FIX THIS no modif on P1 ??? why ....
+        MULTI_STOPPED = move_player((*p1), args_board->buffer, args_board->grid)
+            || move_player((*p2), args_board->buffer, args_board->grid);
+        fprintf(stderr, "pos after  %d %d\n", (*p1)->grid_x, (*p1)->grid_y);
         free(tick);
         break;
     case START:
-        fprintf(stderr, "STARTING GAME !!!\n");
+        fprintf(stderr, "[client] STARTING GAME !!!\n");
     }
     default:
         break;
@@ -148,18 +152,19 @@ void client_loop(int server_fd, BoardContent *args_board)
     struct timespec ts;
     // 125ms
     ts.tv_sec = 0;
-    ts.tv_nsec = 125000000;
+    ts.tv_nsec = 100000000;
 
     // create p1 and p2
     Player *p1 = NULL;
     Player *p2 = NULL;
     // draw players
 
-    while (!MULTI_STOPED)
+    while (!MULTI_STOPPED)
     {
+        // handle message
+        //
         int size = 64;
         char *buffer = malloc(size * sizeof(char));
-
         // wait for server message
         int size_msg = receve_data(&buffer, server_fd, &size);
         fprintf(stderr, "message read \n");
@@ -170,11 +175,11 @@ void client_loop(int server_fd, BoardContent *args_board)
         // connection lost
         if (size_msg == -1)
         {
-            MULTI_STOPED = 1;
+            MULTI_STOPPED = 1;
         }
         nanosleep(&ts, NULL);
     }
-    fprintf(stderr, "client EXITED : %d %d\n", MULTI_STOPED, STOPED);
+    fprintf(stderr, "client EXITED : %d %d\n", MULTI_STOPPED, STOPPED);
     destroy_player(p1);
     destroy_player(p2);
 }
@@ -201,7 +206,7 @@ void client_init(BoardContent *args_board)
     if (nb_try == 0)
     {
         fprintf(stderr, "[client] error, can't connected to server");
-        MULTI_STOPED = 1;
+        MULTI_STOPPED = 1;
     }
 
     G_SERVER_FD = server_fd;

@@ -1,3 +1,8 @@
+#include <stdio.h>
+
+#include "Display/Board.h"
+#include "Game/Dir.h"
+#include "Utils/String.h"
 #define _POSIX_C_SOURCE 200809L
 
 #include "Game/Player.h"
@@ -8,8 +13,8 @@ Player *create_player(int x, int y, char color[])
     res->grid_x = x;
     res->grid_y = y;
     res->color = color;
-    res->dir = RIGHT;
-    res->old_dir = RIGHT;
+    res->dir = (res->grid_x < (G_GRID_WIDTH / 2) ? RIGHT : LEFT);
+    res->old_dir = (res->grid_x < (G_GRID_WIDTH / 2) ? RIGHT : LEFT);
     res->num = 1;
     res->colision = 0;
     return res;
@@ -37,13 +42,22 @@ int move_player(Player *player, String *buffer, char *grid)
 
     if (grid[GRID_COORDINATE(grid_x, grid_y)] != 0)
     {
+        fprintf(stderr, "[player] position not empty on tile %d,%d: [%d]\n",
+                grid_x, grid_y, grid[GRID_COORDINATE(grid_x, grid_y)]);
+        debug_grid(grid);
         player->colision = 1;
         return 1;
+    }
+    else
+    {
+        fprintf(stderr, "[player] position empty on tile %d,%d: [%d]\n", grid_x,
+                grid_y, grid[GRID_COORDINATE(grid_x, grid_y)]);
     }
     // place new spot
     player->grid_x = grid_x;
     player->grid_y = grid_y;
-    draw_player(player, buffer, grid);
+    draw_player(player, buffer);
+    grid[GRID_COORDINATE(player->grid_x, player->grid_y)] = player->num;
     player->old_dir = player->dir;
     return 0;
 }
@@ -112,7 +126,7 @@ void draw_trail(Player *player, String *buffer)
     }
 }
 
-void draw_player(Player *player, String *buffer, char *grid)
+void draw_player(Player *player, String *buffer)
 {
     int shift_w = G_SHIFT_WIDTH + WIDTH_ID_TO_DISPLAY_ID((player->grid_x + 1));
     int shift_h =
@@ -120,5 +134,4 @@ void draw_player(Player *player, String *buffer, char *grid)
     char temp[50];
     sprintf(temp, "\e[%d;%dH%s■\e[0m", shift_h, shift_w, player->color);
     addToString(buffer, temp, 50);
-    grid[GRID_COORDINATE(player->grid_x, player->grid_y)] = player->num;
 }

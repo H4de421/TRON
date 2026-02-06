@@ -20,7 +20,7 @@ void menu_loop(String *buffer, GAME_STATE *state, Inputs_args *inputsArgs)
 
     Menu_config *menuConf = create_menu_config(state);
 
-    while ((*state == MAIN_MENU || *state == MULTI_MENU) && !STOPED)
+    while ((*state == MAIN_MENU || *state == MULTI_MENU) && !STOPPED)
     {
         pthread_mutex_lock(inputsArgs->input_mutex);
         apply_menu_input(menuConf, *inputsArgs->read_char);
