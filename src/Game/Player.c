@@ -42,16 +42,16 @@ int move_player(Player *player, String *buffer, char *grid)
 
     if (grid[GRID_COORDINATE(grid_x, grid_y)] != 0)
     {
-        fprintf(stderr, "[player] position not empty on tile %d,%d: [%d]\n",
-                grid_x, grid_y, grid[GRID_COORDINATE(grid_x, grid_y)]);
+        /*fprintf(stderr, "[player] position not empty on tile %d,%d: [%d]\n",
+                grid_x, grid_y, grid[GRID_COORDINATE(grid_x, grid_y)]);*/
         debug_grid(grid);
         player->colision = 1;
         return 1;
     }
     else
     {
-        fprintf(stderr, "[player] position empty on tile %d,%d: [%d]\n", grid_x,
-                grid_y, grid[GRID_COORDINATE(grid_x, grid_y)]);
+        /*fprintf(stderr, "[player] position empty on tile %d,%d: [%d]\n",
+           grid_x, grid_y, grid[GRID_COORDINATE(grid_x, grid_y)]);*/
     }
     // place new spot
     player->grid_x = grid_x;

@@ -41,6 +41,7 @@ int adjust_grid_size(int *width, int *height)
         draw_borders(G_CANVAS_WIDTH, G_CANVAS_HEIGHT);
         *width = (((G_CANVAS_WIDTH - border_W_size) - 1) / 5);
         *height = (((G_CANVAS_HEIGHT - border_H_size) - 1) / 2);
+        G_SHIFT_WIDTH += (((G_CANVAS_WIDTH - border_W_size) - 1) % 5) / 2;
     }
 
     return 0;

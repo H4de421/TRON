@@ -66,13 +66,14 @@ static void server_process_message(char buffer[4096],
     case IN: {
         in_enum *content = parse_IN(strsave);
         printf("[server] input %d from %d", content->dir, player);
-        if (player)
+
+        if (player && *raw_args->dir_1 / 2 != content->dir / 2)
         {
             pthread_mutex_lock(&raw_args->m_dir_1);
             *raw_args->dir_1 = content->dir;
             pthread_mutex_unlock(&raw_args->m_dir_1);
         }
-        else
+        else if (!player && *raw_args->dir_2 / 2 != content->dir / 2)
         {
             pthread_mutex_lock(&raw_args->m_dir_2);
             *raw_args->dir_2 = content->dir;
